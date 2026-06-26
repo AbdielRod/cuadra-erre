@@ -118,6 +118,132 @@ def edb(sql, args=()):
     cur.execute(sql, args)
     conn.commit(); conn.close()
 
+def init_db():
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS roles (
+            id INTEGER NOT NULL, nombre VARCHAR(50) NOT NULL, descripcion VARCHAR(200),
+            CONSTRAINT pk_roles PRIMARY KEY (id));
+        CREATE SEQUENCE IF NOT EXISTS seq_roles;
+        CREATE SEQUENCE IF NOT EXISTS seq_usuarios;
+        CREATE SEQUENCE IF NOT EXISTS seq_pacientes;
+        CREATE SEQUENCE IF NOT EXISTS seq_familiares;
+        CREATE SEQUENCE IF NOT EXISTS seq_equinos;
+        CREATE SEQUENCE IF NOT EXISTS seq_areas;
+        CREATE SEQUENCE IF NOT EXISTS seq_sesiones;
+        CREATE SEQUENCE IF NOT EXISTS seq_registro_equino;
+        CREATE SEQUENCE IF NOT EXISTS seq_notificaciones;
+        CREATE SEQUENCE IF NOT EXISTS seq_auditoria;
+        CREATE SEQUENCE IF NOT EXISTS seq_configuracion;
+        CREATE SEQUENCE IF NOT EXISTS seq_mantenimiento;
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER NOT NULL, username VARCHAR(80) NOT NULL, password_hash VARCHAR(255) NOT NULL,
+            nombre VARCHAR(100) NOT NULL, apellido VARCHAR(100), email VARCHAR(150), telefono VARCHAR(20),
+            rol_id INTEGER NOT NULL, activo SMALLINT DEFAULT 1, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_usuarios PRIMARY KEY (id), CONSTRAINT uq_username UNIQUE (username),
+            CONSTRAINT fk_usu_rol FOREIGN KEY (rol_id) REFERENCES roles(id));
+        CREATE TABLE IF NOT EXISTS pacientes (
+            id INTEGER NOT NULL, nombre VARCHAR(100) NOT NULL, apellido VARCHAR(100) NOT NULL,
+            fecha_nacimiento DATE, diagnostico VARCHAR(500), alergias VARCHAR(300), medicamentos VARCHAR(300),
+            contacto_emergencia VARCHAR(150), telefono_emergencia VARCHAR(20), email_familiar VARCHAR(150),
+            activo SMALLINT DEFAULT 1, fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_pacientes PRIMARY KEY (id));
+        CREATE TABLE IF NOT EXISTS familiares (
+            id INTEGER NOT NULL, paciente_id INTEGER NOT NULL, usuario_id INTEGER,
+            nombre VARCHAR(100) NOT NULL, apellido VARCHAR(100) NOT NULL, parentesco VARCHAR(50),
+            telefono VARCHAR(20), email VARCHAR(150),
+            CONSTRAINT pk_familiares PRIMARY KEY (id),
+            CONSTRAINT fk_fam_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id));
+        CREATE TABLE IF NOT EXISTS equinos (
+            id INTEGER NOT NULL, nombre VARCHAR(80) NOT NULL, raza VARCHAR(80), edad INTEGER,
+            color VARCHAR(50), estado VARCHAR(30) DEFAULT 'DISPONIBLE', notas_salud VARCHAR(500),
+            ultima_revision DATE, activo SMALLINT DEFAULT 1,
+            CONSTRAINT pk_equinos PRIMARY KEY (id));
+        CREATE TABLE IF NOT EXISTS areas (
+            id INTEGER NOT NULL, nombre VARCHAR(100) NOT NULL, descripcion VARCHAR(200),
+            capacidad INTEGER DEFAULT 1, activo SMALLINT DEFAULT 1,
+            CONSTRAINT pk_areas PRIMARY KEY (id));
+        CREATE TABLE IF NOT EXISTS sesiones (
+            id INTEGER NOT NULL, paciente_id INTEGER NOT NULL, terapeuta_id INTEGER NOT NULL,
+            equino_id INTEGER, area_id INTEGER, fecha_hora TIMESTAMP NOT NULL,
+            duracion_min INTEGER DEFAULT 45, estado VARCHAR(30) DEFAULT 'PROGRAMADA',
+            objetivos VARCHAR(500), notas_sesion VARCHAR(1000), recomendaciones_casa VARCHAR(500),
+            estado_paciente VARCHAR(50), area_trabajada VARCHAR(80), email_enviado SMALLINT DEFAULT 0,
+            recordatorio_enviado SMALLINT DEFAULT 0, fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_sesiones PRIMARY KEY (id),
+            CONSTRAINT fk_ses_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+            CONSTRAINT fk_ses_terapeuta FOREIGN KEY (terapeuta_id) REFERENCES usuarios(id),
+            CONSTRAINT fk_ses_equino FOREIGN KEY (equino_id) REFERENCES equinos(id),
+            CONSTRAINT fk_ses_area FOREIGN KEY (area_id) REFERENCES areas(id));
+        CREATE TABLE IF NOT EXISTS registro_equino (
+            id INTEGER NOT NULL, equino_id INTEGER NOT NULL, fecha DATE NOT NULL,
+            encargado_id INTEGER, estado_fisico VARCHAR(50), estado_animo VARCHAR(50),
+            disponible SMALLINT DEFAULT 1, observaciones VARCHAR(500),
+            CONSTRAINT pk_reg_eq PRIMARY KEY (id),
+            CONSTRAINT fk_reg_equino FOREIGN KEY (equino_id) REFERENCES equinos(id));
+        CREATE TABLE IF NOT EXISTS notificaciones (
+            id INTEGER NOT NULL, sesion_id INTEGER, familiar_id INTEGER, tipo VARCHAR(50),
+            mensaje VARCHAR(1000), enviada SMALLINT DEFAULT 0, email_destino VARCHAR(150),
+            fecha_envio TIMESTAMP, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_notif PRIMARY KEY (id),
+            CONSTRAINT fk_not_sesion FOREIGN KEY (sesion_id) REFERENCES sesiones(id),
+            CONSTRAINT fk_not_fam FOREIGN KEY (familiar_id) REFERENCES familiares(id));
+        CREATE TABLE IF NOT EXISTS auditoria (
+            id INTEGER NOT NULL, usuario_id INTEGER, accion VARCHAR(100),
+            tabla_afectada VARCHAR(50), registro_id INTEGER, detalle VARCHAR(500),
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_auditoria PRIMARY KEY (id));
+        CREATE TABLE IF NOT EXISTS configuracion (
+            id INTEGER NOT NULL, nombre_centro VARCHAR(150) DEFAULT 'Cuadra Erre',
+            telefono VARCHAR(20), direccion VARCHAR(300), email_contacto VARCHAR(150),
+            color_primario VARCHAR(10) DEFAULT '#1e3a5f', recordatorio_24h SMALLINT DEFAULT 1,
+            horas_anticipacion INTEGER DEFAULT 24,
+            CONSTRAINT pk_config PRIMARY KEY (id));
+        CREATE TABLE IF NOT EXISTS mantenimiento_equino (
+            id INTEGER NOT NULL, equino_id INTEGER NOT NULL, tipo VARCHAR(50) NOT NULL,
+            fecha_programada DATE NOT NULL, fecha_realizada DATE, estado VARCHAR(30) DEFAULT 'PENDIENTE',
+            notas VARCHAR(500), registrado_por INTEGER, fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_mant_eq PRIMARY KEY (id),
+            CONSTRAINT fk_mant_equino FOREIGN KEY (equino_id) REFERENCES equinos(id),
+            CONSTRAINT fk_mant_usuario FOREIGN KEY (registrado_por) REFERENCES usuarios(id));
+    """)
+    # Insertar datos iniciales solo si las tablas estan vacias
+    cur.execute("SELECT COUNT(*) FROM roles")
+    if cur.fetchone()[0] == 0:
+        cur.execute("""
+            INSERT INTO roles (id, nombre, descripcion) VALUES
+            (nextval('seq_roles'),'ADMINISTRADOR','Acceso total al sistema'),
+            (nextval('seq_roles'),'TERAPEUTA','Gestion de sesiones y expedientes'),
+            (nextval('seq_roles'),'COORDINADOR','Agenda y reportes'),
+            (nextval('seq_roles'),'ENCARGADO_EQUINOS','Registro de caballos');
+            INSERT INTO areas (id, nombre, descripcion, capacidad) VALUES
+            (nextval('seq_areas'),'Picadero 1','Pista principal',1),
+            (nextval('seq_areas'),'Picadero 2','Pista secundaria',1),
+            (nextval('seq_areas'),'Sala de Evaluacion','Evaluacion inicial',2);
+            INSERT INTO equinos (id, nombre, raza, edad, color, estado) VALUES
+            (nextval('seq_equinos'),'Tornado','Cuarto de Milla',8,'Bayo','DISPONIBLE'),
+            (nextval('seq_equinos'),'Luna','Andaluz',6,'Blanco','DISPONIBLE'),
+            (nextval('seq_equinos'),'Rayo','Mestizo',10,'Negro','DISPONIBLE'),
+            (nextval('seq_equinos'),'Estrella','Pura Sangre',7,'Alazan','DISPONIBLE'),
+            (nextval('seq_equinos'),'Oso','Azteca',5,'Castano','DISPONIBLE');
+            INSERT INTO pacientes (id, nombre, apellido, fecha_nacimiento, diagnostico) VALUES
+            (nextval('seq_pacientes'),'Sofia','Garcia','2015-03-12','Trastorno del Espectro Autista'),
+            (nextval('seq_pacientes'),'Miguel','Torres','2012-07-08','TDAH'),
+            (nextval('seq_pacientes'),'Lucas','Perez','2014-05-30','Sindrome de Down');
+            INSERT INTO usuarios (id, username, password_hash, nombre, apellido, email, rol_id)
+            VALUES (nextval('seq_usuarios'),'admin',
+            'scrypt:32768:8:1$pFuZ1dhdz5i7UpGP$77541f5cffb6569ffdddf616ba6cd6971492422deb796342923af37e2a8a4fd95a41409c9baaf50abb83d74b03652f57f167611e9b69e772c3153112a2110d48',
+            'Administrador','Sistema','admin@cuadraerre.mx',1);
+            INSERT INTO configuracion (id, nombre_centro, telefono, direccion, email_contacto, color_primario, recordatorio_24h, horas_anticipacion)
+            VALUES (nextval('seq_configuracion'),'Cuadra Erre','624-000-0000','Los Cabos, Baja California Sur','cuadraerreoficial@gmail.com','#1e3a5f',1,24);
+        """)
+    conn.commit(); conn.close()
+
+try:
+    init_db()
+except Exception as e:
+    print(f"[init_db] Error: {e}")
+
 def registrar_auditoria(accion, tabla, registro_id, detalle=""):
     try:
         uid = session.get("uid")
