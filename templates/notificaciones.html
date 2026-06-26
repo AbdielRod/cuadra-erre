@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Notificaciones - Cuadra Erre{% endblock %}
+{% block page_title %}Notificaciones{% endblock %}
+{% block page_sub %}Correos automaticos enviados a familias{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3>Historial de notificaciones</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ notificaciones|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Paciente</th>
+          <th>Familiar</th>
+          <th>Tipo</th>
+          <th>Email destino</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in notificaciones %}
+        <tr>
+          <td>{{ n.FECHA_CREACION|string|truncate(16,true,'') }}</td>
+          <td><strong>{{ n.PACIENTE }}</strong></td>
+          <td>{{ n.FAMILIAR }}</td>
+          <td>
+            {% if n.TIPO == 'CONFIRMACION_CITA' %}
+              <span class="badge badge-azul">Confirmacion de cita</span>
+            {% elif n.TIPO == 'NOTA_SESION' %}
+              <span class="badge badge-gris">Resumen de sesion</span>
+            {% else %}
+              <span class="badge badge-gris">{{ n.TIPO }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px">{{ n.EMAIL_DESTINO or '-' }}</td>
+          <td>
+            {% if n.ENVIADA == 1 %}
+              <span class="badge badge-verde">Enviado</span>
+            {% else %}
+              <span class="badge badge-rojo">Fallo en envio</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align:center;color:var(--gris-30);padding:40px">
+            Sin notificaciones generadas aun.<br>
+            <span style="font-size:11.5px">Se generan automaticamente al programar o completar una sesion.</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

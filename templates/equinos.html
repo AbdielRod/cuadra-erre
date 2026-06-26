@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Equinos - Cuadra Erre{% endblock %}
+{% block page_title %}Equinos{% endblock %}
+{% block page_sub %}Registro y disponibilidad{% endblock %}
+{% block topbar_actions %}
+<div style="display:flex;gap:10px">
+  <a href="/equinos/exportar" class="btn btn-secondary">Exportar Excel</a>
+  {% if session.rol in ['ADMINISTRADOR','ENCARGADO_EQUINOS'] %}
+  <a href="/mantenimiento" class="btn btn-secondary">Mantenimiento</a>
+  <button class="btn btn-primary" onclick="openModal('modalNuevo')">Nuevo equino</button>
+  {% endif %}
+</div>
+{% endblock %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:24px">
+  {% for eq in equinos %}
+  <div class="card" style="padding:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--gris-90)">{{ eq.NOMBRE }}</div>
+        <div style="font-size:11px;color:var(--gris-30);margin-top:2px">{{ eq.RAZA or 'Sin raza' }} &middot; {{ eq.EDAD or '?' }} anos</div>
+      </div>
+      {% if session.rol in ['ADMINISTRADOR','ENCARGADO_EQUINOS'] %}
+      <button class="btn btn-sm btn-secondary" style="padding:4px 8px"
+              onclick="openEditEq({{ eq.ID }},'{{ eq.NOMBRE }}','{{ eq.RAZA or '' }}',
+              '{{ eq.EDAD or '' }}','{{ eq.COLOR or '' }}','{{ eq.NOTAS_SALUD or '' }}')">Editar</button>
+      {% endif %}
+    </div>
+    <div style="margin-bottom:12px">
+      {% if eq.ESTADO == 'DISPONIBLE' %}
+        <span class="badge badge-verde"><span class="status-dot dot-verde"></span>Disponible</span>
+      {% elif eq.ESTADO == 'PRECAUCION' %}
+        <span class="badge badge-ambar"><span class="status-dot dot-ambar"></span>Precaucion</span>
+      {% elif eq.ESTADO == 'DESCANSO' %}
+        <span class="badge badge-rojo">Descanso</span>
+      {% elif eq.ESTADO == 'VETERINARIO' %}
+        <span class="badge badge-rojo">Veterinario</span>
+      {% else %}
+        <span class="badge badge-gris">{{ eq.ESTADO }}</span>
+      {% endif %}
+    </div>
+    {% if session.rol in ['ADMINISTRADOR','ENCARGADO_EQUINOS','COORDINADOR'] %}
+    <button class="btn btn-sm btn-secondary" style="width:100%;justify-content:center"
+            onclick="openSem({{ eq.ID }},'{{ eq.NOMBRE }}')">
+      Actualizar estado
+    </button>
+    {% endif %}
+  </div>
+  {% else %}
+  <div style="grid-column:1/-1;text-align:center;color:var(--gris-30);padding:40px">Sin equinos registrados</div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Registros del dia</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ registros|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Equino</th>
+          <th>Encargado</th>
+          <th>Estado fisico</th>
+          <th>Estado animo</th>
+          <th>Disponible</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in registros %}
+        <tr>
+          <td><strong>{{ r.EQ_NOM }}</strong></td>
+          <td>{{ r.ENC or '-' }}</td>
+          <td>{{ r.ESTADO_FISICO or '-' }}</td>
+          <td>{{ r.ESTADO_ANIMO or '-' }}</td>
+          <td>
+            {% if r.DISPONIBLE == 1 %}
+              <span class="badge badge-verde">Si</span>
+            {% else %}
+              <span class="badge badge-rojo">No</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px">{{ r.OBSERVACIONES|truncate(60) if r.OBSERVACIONES else '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--gris-30);padding:30px">Sin registros hoy</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalNuevo">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Nuevo equino</h4>
+      <span class="modal-close" onclick="closeModal('modalNuevo')">&times;</span>
+    </div>
+    <form method="POST" action="/equinos/nuevo">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" placeholder="Ej: Tornado" required>
+          </div>
+          <div class="form-group">
+            <label>RAZA</label>
+            <input type="text" name="raza" placeholder="Ej: Cuarto de Milla">
+          </div>
+          <div class="form-group">
+            <label>EDAD (anos)</label>
+            <input type="number" name="edad" min="1" max="40" placeholder="Ej: 8">
+          </div>
+          <div class="form-group">
+            <label>COLOR</label>
+            <input type="text" name="color" placeholder="Ej: Bayo">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>NOTAS DE SALUD</label>
+          <textarea name="notas_salud" rows="2" placeholder="Ej: Revision veterinaria al dia"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalNuevo')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Registrar equino</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalSem">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Actualizar estado &mdash; <span id="semNombre"></span></h4>
+      <span class="modal-close" onclick="closeModal('modalSem')">&times;</span>
+    </div>
+    <form method="POST" action="/equinos/registro">
+      <input type="hidden" name="equino_id" id="semId">
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:16px">
+          <label>ESTADO *</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+            <label style="display:flex;align-items:center;gap:9px;padding:11px;border:1.5px solid var(--gris-10);border-radius:5px;cursor:pointer">
+              <input type="radio" name="semaforo" value="1" checked style="width:auto">
+              <span style="font-size:12.5px;font-weight:600">Disponible</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:9px;padding:11px;border:1.5px solid var(--gris-10);border-radius:5px;cursor:pointer">
+              <input type="radio" name="semaforo" value="2" style="width:auto">
+              <span style="font-size:12.5px;font-weight:600">Precaucion</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:9px;padding:11px;border:1.5px solid var(--gris-10);border-radius:5px;cursor:pointer">
+              <input type="radio" name="semaforo" value="3" style="width:auto">
+              <span style="font-size:12.5px;font-weight:600">Descanso</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:9px;padding:11px;border:1.5px solid var(--gris-10);border-radius:5px;cursor:pointer">
+              <input type="radio" name="semaforo" value="4" style="width:auto">
+              <span style="font-size:12.5px;font-weight:600">Veterinario</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ESTADO FISICO</label>
+            <select name="estado_fisico">
+              <option value="BUENO">Bueno</option>
+              <option value="REGULAR">Regular</option>
+              <option value="MALO">Malo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ESTADO DE ANIMO</label>
+            <select name="estado_animo">
+              <option value="TRANQUILO">Tranquilo</option>
+              <option value="ACTIVO">Activo</option>
+              <option value="NERVIOSO">Nervioso</option>
+              <option value="CANSADO">Cansado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>OBSERVACIONES</label>
+          <textarea name="observaciones" rows="2" placeholder="Ej: Pequena molestia en pata delantera derecha"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalSem')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar estado</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalEditar">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Editar equino</h4>
+      <span class="modal-close" onclick="closeModal('modalEditar')">&times;</span>
+    </div>
+    <form method="POST" id="frmEditEq">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" id="edit_nom" required>
+          </div>
+          <div class="form-group">
+            <label>RAZA</label>
+            <input type="text" name="raza" id="edit_raza">
+          </div>
+          <div class="form-group">
+            <label>EDAD</label>
+            <input type="number" name="edad" id="edit_edad" min="1" max="40">
+          </div>
+          <div class="form-group">
+            <label>COLOR</label>
+            <input type="text" name="color" id="edit_color">
+          </div>
+          <div class="form-group">
+            <label>ULTIMA REVISION</label>
+            <input type="date" name="ultima_revision" id="edit_rev">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>NOTAS DE SALUD</label>
+          <textarea name="notas_salud" id="edit_notas" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditar')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function openSem(id, nombre){
+  document.getElementById('semId').value = id;
+  document.getElementById('semNombre').textContent = nombre;
+  openModal('modalSem');
+}
+function openEditEq(id, nom, raza, edad, color, notas){
+  document.getElementById('frmEditEq').action = '/equinos/'+id+'/editar';
+  document.getElementById('edit_nom').value   = nom;
+  document.getElementById('edit_raza').value  = raza;
+  document.getElementById('edit_edad').value  = edad;
+  document.getElementById('edit_color').value = color;
+  document.getElementById('edit_notas').value = notas;
+  openModal('modalEditar');
+}
+</script>
+{% endblock %}

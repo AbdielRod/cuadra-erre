@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Agenda de Equinos - Cuadra Erre{% endblock %}
+{% block page_title %}Agenda de Equinos{% endblock %}
+{% block page_sub %}Que caballos se necesitan cada dia, proximos 7 dias{% endblock %}
+{% block content %}
+
+<div style="display:flex;flex-direction:column;gap:16px">
+  {% for d in dias %}
+  <div class="card">
+    <div class="card-header">
+      <h3>{{ d.nombre_dia }}</h3>
+      <span style="font-size:11.5px;color:var(--gris-30)">{{ d.sesiones|length }} sesion(es)</span>
+    </div>
+    {% if d.sesiones %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Hora</th><th>Paciente</th><th>Equino requerido</th><th>Estado equino</th><th>Estado sesion</th></tr>
+        </thead>
+        <tbody>
+          {% for s in d.sesiones %}
+          <tr>
+            <td><strong>{{ s.HORA }}</strong></td>
+            <td>{{ s.PACIENTE }}</td>
+            <td>
+              {% if s.EQUINO %}
+                <a href="/equinos/{{ s.EQUINO_ID }}/detalle" style="color:var(--azul-med);font-weight:600">{{ s.EQUINO }}</a>
+              {% else %}
+                <span style="color:var(--rojo);font-weight:600">Sin asignar</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.ESTADO_EQUINO == 'DISPONIBLE' %}<span class="badge badge-verde">Disponible</span>
+              {% elif s.ESTADO_EQUINO == 'PRECAUCION' %}<span class="badge badge-ambar">Precaucion</span>
+              {% elif s.ESTADO_EQUINO in ['DESCANSO','VETERINARIO'] %}<span class="badge badge-rojo">No disponible</span>
+              {% else %}<span class="badge badge-gris">-</span>{% endif %}
+            </td>
+            <td>
+              {% if s.ESTADO == 'PROGRAMADA' %}<span class="badge badge-ambar">Programada</span>
+              {% elif s.ESTADO == 'REALIZADA' %}<span class="badge badge-verde">Realizada</span>
+              {% else %}<span class="badge badge-gris">{{ s.ESTADO }}</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body" style="text-align:center;color:var(--gris-30);padding:20px">Sin sesiones programadas este dia</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

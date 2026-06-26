@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Expediente - {{ paciente.NOMBRE }} {{ paciente.APELLIDO }}{% endblock %}
+{% block page_title %}Expediente Clinico{% endblock %}
+{% block page_sub %}{{ paciente.NOMBRE }} {{ paciente.APELLIDO }}{% endblock %}
+{% block topbar_actions %}
+<a href="/pacientes/{{ paciente.ID }}/pdf" class="btn btn-secondary">Descargar PDF</a>
+<a href="/pacientes" class="btn btn-secondary">Volver al listado</a>
+{% endblock %}
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:20px">
+  <div class="stat-card">
+    <div class="label">Total de sesiones</div>
+    <div class="value">{{ total_sesiones }}</div>
+  </div>
+  <div class="stat-card accent-verde">
+    <div class="label">Sesiones realizadas</div>
+    <div class="value">{{ realizadas }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Familiares registrados</div>
+    <div class="value">{{ familiares|length }}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start">
+
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div class="card">
+    <div class="card-header">
+      <h3>Datos del paciente</h3>
+      {% if session.rol in ['ADMINISTRADOR','COORDINADOR','TERAPEUTA'] %}
+      <button class="btn btn-sm btn-secondary" onclick="openModal('modalEditar')">Editar</button>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <div class="info-row">
+        <span class="info-label">Nombre completo</span>
+        <span class="info-value">{{ paciente.NOMBRE }} {{ paciente.APELLIDO }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Fecha de nacimiento</span>
+        <span class="info-value">{{ paciente.FECHA_NACIMIENTO or '-' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Diagnostico</span>
+        <span class="info-value">{{ paciente.DIAGNOSTICO or '-' }}</span>
+      </div>
+      {% if paciente.ALERGIAS %}
+      <div class="info-row">
+        <span class="info-label" style="color:var(--rojo)">Alergias</span>
+        <span class="info-value" style="color:var(--rojo)">{{ paciente.ALERGIAS }}</span>
+      </div>
+      {% endif %}
+      {% if paciente.MEDICAMENTOS %}
+      <div class="info-row">
+        <span class="info-label">Medicamentos</span>
+        <span class="info-value">{{ paciente.MEDICAMENTOS }}</span>
+      </div>
+      {% endif %}
+      {% if paciente.CONTACTO_EMERGENCIA %}
+      <div style="background:var(--ambar-bg);border-radius:5px;padding:10px 12px;margin-top:10px">
+        <div class="info-label" style="color:var(--ambar)">Contacto de emergencia</div>
+        <div class="info-value" style="margin-top:3px">{{ paciente.CONTACTO_EMERGENCIA }}</div>
+        <div style="font-size:11.5px;color:var(--gris-50)">{{ paciente.TELEFONO_EMERGENCIA or '' }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Familiares</h3>
+      {% if session.rol in ['ADMINISTRADOR','COORDINADOR'] %}
+      <button class="btn btn-sm btn-secondary" onclick="openModal('modalFamiliar')">Agregar</button>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% for f in familiares %}
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:12.5px;font-weight:600;color:var(--gris-90)">{{ f.NOMBRE }} {{ f.APELLIDO }}</div>
+        <div style="font-size:11px;color:var(--gris-30)">{{ f.PARENTESCO or '' }} {% if f.TELEFONO %}&middot; {{ f.TELEFONO }}{% endif %}</div>
+        {% if f.EMAIL %}<div style="font-size:11px;color:var(--azul-med);margin-top:2px">{{ f.EMAIL }}</div>{% endif %}
+      </div>
+      {% else %}
+      <p style="color:var(--gris-30);font-size:12px;text-align:center;padding:16px">Sin familiares registrados</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Historial de sesiones</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ historial|length }} sesiones</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha / Hora</th>
+          <th>Terapeuta</th>
+          <th>Equino</th>
+          <th>Estado</th>
+          <th>Notas</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in historial %}
+        <tr>
+          <td><strong>{{ s.FECHA_HORA|string|truncate(16,true,'') }}</strong></td>
+          <td>{{ s.TERAPEUTA }}</td>
+          <td>{{ s.EQUINO or '-' }}</td>
+          <td>
+            {% if s.ESTADO == 'PROGRAMADA' %}
+              <span class="badge badge-ambar">Programada</span>
+            {% elif s.ESTADO == 'REALIZADA' %}
+              <span class="badge badge-verde">Realizada</span>
+            {% elif s.ESTADO == 'CANCELADA' %}
+              <span class="badge badge-rojo">Cancelada</span>
+            {% else %}
+              <span class="badge badge-gris">{{ s.ESTADO }}</span>
+            {% endif %}
+          </td>
+          <td style="max-width:200px;font-size:12px">{{ s.NOTAS_SESION|truncate(60) if s.NOTAS_SESION else '-' }}</td>
+          <td><a href="/sesion/{{ s.ID }}" class="btn btn-sm btn-secondary">Ver</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--gris-30);padding:30px">Sin sesiones registradas</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<div class="modal-backdrop" id="modalEditar">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Editar paciente</h4>
+      <span class="modal-close" onclick="closeModal('modalEditar')">&times;</span>
+    </div>
+    <form method="POST" action="/pacientes/{{ paciente.ID }}/editar">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" value="{{ paciente.NOMBRE }}" required>
+          </div>
+          <div class="form-group">
+            <label>APELLIDO *</label>
+            <input type="text" name="apellido" value="{{ paciente.APELLIDO }}" required>
+          </div>
+          <div class="form-group">
+            <label>FECHA NACIMIENTO</label>
+            <input type="date" name="fecha_nacimiento" value="{{ paciente.FECHA_NACIMIENTO or '' }}">
+          </div>
+          <div class="form-group">
+            <label>CONTACTO EMERGENCIA</label>
+            <input type="text" name="contacto_emergencia" value="{{ paciente.CONTACTO_EMERGENCIA or '' }}">
+          </div>
+          <div class="form-group">
+            <label>TELEFONO EMERGENCIA</label>
+            <input type="text" name="telefono_emergencia" value="{{ paciente.TELEFONO_EMERGENCIA or '' }}">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>DIAGNOSTICO</label>
+          <textarea name="diagnostico" rows="2">{{ paciente.DIAGNOSTICO or '' }}</textarea>
+        </div>
+        <div class="form-grid" style="margin-top:14px">
+          <div class="form-group">
+            <label>ALERGIAS</label>
+            <textarea name="alergias" rows="2">{{ paciente.ALERGIAS or '' }}</textarea>
+          </div>
+          <div class="form-group">
+            <label>MEDICAMENTOS</label>
+            <textarea name="medicamentos" rows="2">{{ paciente.MEDICAMENTOS or '' }}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditar')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalFamiliar">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Agregar familiar</h4>
+      <span class="modal-close" onclick="closeModal('modalFamiliar')">&times;</span>
+    </div>
+    <form method="POST" action="/pacientes/{{ paciente.ID }}/familiar/nuevo">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" required placeholder="Ej: Ana">
+          </div>
+          <div class="form-group">
+            <label>APELLIDO *</label>
+            <input type="text" name="apellido" required placeholder="Ej: Garcia">
+          </div>
+          <div class="form-group">
+            <label>PARENTESCO</label>
+            <input type="text" name="parentesco" placeholder="Ej: Madre">
+          </div>
+          <div class="form-group">
+            <label>TELEFONO</label>
+            <input type="text" name="telefono" placeholder="Ej: 6241234567">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>EMAIL (para notificaciones)</label>
+            <input type="text" name="email" placeholder="Ej: mama@gmail.com">
+          </div>
+        </div>
+        <div style="background:var(--azul-bg);border-left:3px solid var(--azul-med);border-radius:4px;padding:10px 14px;margin-top:14px;font-size:11.5px;color:var(--azul-osc)">
+          El email registrado recibira las confirmaciones de cita y resumenes de sesion automaticamente.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalFamiliar')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Registrar familiar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

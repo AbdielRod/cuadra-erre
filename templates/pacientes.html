@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Pacientes - Cuadra Erre{% endblock %}
+{% block page_title %}Pacientes{% endblock %}
+{% block page_sub %}Expedientes clinicos registrados{% endblock %}
+{% block topbar_actions %}
+<div style="display:flex;gap:10px">
+  <a href="/pacientes/exportar" class="btn btn-secondary">Exportar Excel</a>
+  {% if session.rol in ['ADMINISTRADOR','COORDINADOR'] %}
+  <button class="btn btn-primary" onclick="openModal('modalNuevo')">Nuevo paciente</button>
+  {% endif %}
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="card" style="margin-bottom:18px">
+  <div class="card-body" style="padding:14px 20px">
+    <form method="GET" action="/pacientes" style="display:flex;gap:12px;align-items:flex-end">
+      <div class="form-group" style="flex:1">
+        <label>BUSCAR PACIENTE</label>
+        <input type="text" name="q" value="{{ busqueda }}" placeholder="Nombre o apellido...">
+      </div>
+      <button type="submit" class="btn btn-secondary">Buscar</button>
+      {% if busqueda %}<a href="/pacientes" class="btn btn-secondary">Limpiar</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Listado de pacientes</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ pacientes|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Fecha Nac.</th>
+          <th>Diagnostico</th>
+          <th>Contacto emergencia</th>
+          <th>Telefono</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pacientes %}
+        <tr>
+          <td><strong>{{ p.APELLIDO }}, {{ p.NOMBRE }}</strong></td>
+          <td>{{ p.FECHA_NACIMIENTO or '-' }}</td>
+          <td>{{ p.DIAGNOSTICO|truncate(40) if p.DIAGNOSTICO else '-' }}</td>
+          <td>{{ p.CONTACTO_EMERGENCIA or '-' }}</td>
+          <td>{{ p.TELEFONO_EMERGENCIA or '-' }}</td>
+          <td><a href="/pacientes/{{ p.ID }}" class="btn btn-sm btn-primary">Expediente</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--gris-30);padding:30px">Sin pacientes registrados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalNuevo">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Nuevo paciente</h4>
+      <span class="modal-close" onclick="closeModal('modalNuevo')">&times;</span>
+    </div>
+    <form method="POST" action="/pacientes/nuevo">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" placeholder="Ej: Sofia" required>
+          </div>
+          <div class="form-group">
+            <label>APELLIDO *</label>
+            <input type="text" name="apellido" placeholder="Ej: Garcia" required>
+          </div>
+          <div class="form-group">
+            <label>FECHA DE NACIMIENTO</label>
+            <input type="date" name="fecha_nacimiento">
+          </div>
+          <div class="form-group">
+            <label>CONTACTO EMERGENCIA</label>
+            <input type="text" name="contacto_emergencia" placeholder="Nombre del tutor">
+          </div>
+          <div class="form-group">
+            <label>TELEFONO EMERGENCIA</label>
+            <input type="text" name="telefono_emergencia" placeholder="Ej: 6241234567">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>DIAGNOSTICO *</label>
+          <textarea name="diagnostico" rows="2" placeholder="Ej: Trastorno del Espectro Autista nivel 1" required></textarea>
+        </div>
+        <div class="form-grid" style="margin-top:14px">
+          <div class="form-group">
+            <label>ALERGIAS</label>
+            <textarea name="alergias" rows="2" placeholder="Ej: Penicilina, polvo"></textarea>
+          </div>
+          <div class="form-group">
+            <label>MEDICAMENTOS</label>
+            <textarea name="medicamentos" rows="2" placeholder="Ej: Ritalin 10mg"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalNuevo')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Registrar paciente</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

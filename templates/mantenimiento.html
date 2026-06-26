@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Mantenimiento - Cuadra Erre{% endblock %}
+{% block page_title %}Mantenimiento de Equinos{% endblock %}
+{% block page_sub %}Vacunas, herraje, desparasitacion y revisiones programadas{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="openModal('modalNuevo')">Programar mantenimiento</button>
+{% endblock %}
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:20px">
+  <div class="stat-card accent-rojo">
+    <div class="label">Vencidos</div>
+    <div class="value">{{ vencidos }}</div>
+    <div class="sub">requieren atencion inmediata</div>
+  </div>
+  <div class="stat-card accent-ambar">
+    <div class="label">Proximos 7 dias</div>
+    <div class="value">{{ proximos }}</div>
+    <div class="sub">programados pronto</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total registrados</div>
+    <div class="value">{{ mantenimientos|length }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="card-body" style="padding:14px 20px">
+    <form method="GET" action="/mantenimiento" style="display:flex;gap:12px;align-items:flex-end">
+      <div class="form-group" style="min-width:200px">
+        <label>FILTRAR POR ESTADO</label>
+        <select name="estado">
+          <option value="">Todos</option>
+          <option value="PENDIENTE" {% if filtro=='PENDIENTE' %}selected{% endif %}>Pendiente</option>
+          <option value="COMPLETADO" {% if filtro=='COMPLETADO' %}selected{% endif %}>Completado</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary">Filtrar</button>
+      {% if filtro %}<a href="/mantenimiento" class="btn btn-secondary">Limpiar</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Calendario de mantenimiento</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ mantenimientos|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Equino</th><th>Tipo</th><th>Fecha programada</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for m in mantenimientos %}
+        <tr>
+          <td><strong>{{ m.EQUINO }}</strong></td>
+          <td>{{ m.TIPO }}</td>
+          <td>
+            {{ m.FECHA_PROGRAMADA }}
+            {% if m.ESTADO == 'PENDIENTE' and m.FECHA_PROGRAMADA|string < hoy_iso %}
+              <span class="badge badge-rojo" style="margin-left:6px">Vencido</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.ESTADO == 'PENDIENTE' %}<span class="badge badge-ambar">Pendiente</span>
+            {% else %}<span class="badge badge-verde">Completado ({{ m.FECHA_REALIZADA }})</span>{% endif %}
+          </td>
+          <td style="font-size:12px">{{ m.NOTAS|truncate(50) if m.NOTAS else '-' }}</td>
+          <td>
+            {% if m.ESTADO == 'PENDIENTE' %}
+            <button class="btn btn-sm btn-secondary" onclick="openCompletar({{ m.ID }})">Marcar completado</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--gris-30);padding:30px">Sin mantenimiento programado</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalNuevo">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Programar mantenimiento</h4>
+      <span class="modal-close" onclick="closeModal('modalNuevo')">&times;</span>
+    </div>
+    <form method="POST" action="/mantenimiento/nuevo">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>EQUINO *</label>
+            <select name="equino_id" required>
+              <option value="">Seleccionar</option>
+              {% for e in equinos %}
+              <option value="{{ e.ID }}">{{ e.NOMBRE }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>TIPO DE MANTENIMIENTO *</label>
+            <select name="tipo" required>
+              <option value="">Seleccionar</option>
+              <option value="Vacunacion">Vacunacion</option>
+              <option value="Herraje">Herraje</option>
+              <option value="Desparasitacion">Desparasitacion</option>
+              <option value="Revision dental">Revision dental</option>
+              <option value="Revision veterinaria">Revision veterinaria general</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>FECHA PROGRAMADA *</label>
+            <input type="date" name="fecha_programada" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>NOTAS</label>
+          <textarea name="notas" rows="2" placeholder="Observaciones adicionales"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalNuevo')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Programar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalCompletar">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Marcar como completado</h4>
+      <span class="modal-close" onclick="closeModal('modalCompletar')">&times;</span>
+    </div>
+    <form method="POST" id="frmCompletar">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>NOTAS DEL MANTENIMIENTO REALIZADO</label>
+          <textarea name="notas_completar" rows="3" placeholder="Ej: Aplicada vacuna triple equina, sin reacciones"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalCompletar')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Confirmar completado</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function openCompletar(id){
+  document.getElementById('frmCompletar').action = '/mantenimiento/' + id + '/completar';
+  openModal('modalCompletar');
+}
+</script>
+{% endblock %}

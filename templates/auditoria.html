@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Auditoria - Cuadra Erre{% endblock %}
+{% block page_title %}Auditoria del Sistema{% endblock %}
+{% block page_sub %}Registro de actividad de usuarios{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3>Bitacora de acciones</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ registros|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Accion</th>
+          <th>Tabla</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in registros %}
+        <tr>
+          <td>{{ r.FECHA|string|truncate(19,true,'') }}</td>
+          <td><strong>{{ r.NOMBRE_USUARIO or 'Sistema' }}</strong></td>
+          <td>
+            {% if r.ACCION == 'CREAR' %}
+              <span class="badge badge-verde">Crear</span>
+            {% elif r.ACCION == 'ACTUALIZAR' %}
+              <span class="badge badge-azul">Actualizar</span>
+            {% elif r.ACCION == 'CANCELAR' %}
+              <span class="badge badge-rojo">Cancelar</span>
+            {% elif r.ACCION == 'LOGIN' %}
+              <span class="badge badge-gris">Inicio sesion</span>
+            {% elif r.ACCION == 'LOGOUT' %}
+              <span class="badge badge-gris">Cierre sesion</span>
+            {% else %}
+              <span class="badge badge-gris">{{ r.ACCION }}</span>
+            {% endif %}
+          </td>
+          <td>{{ r.TABLA_AFECTADA or '-' }}</td>
+          <td style="font-size:12px">{{ r.DETALLE|truncate(70) if r.DETALLE else '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:var(--gris-30);padding:40px">Sin registros de auditoria aun</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}{{ eq.NOMBRE }} - Cuadra Erre{% endblock %}
+{% block page_title %}{{ eq.NOMBRE }}{% endblock %}
+{% block page_sub %}{{ eq.RAZA or 'Sin raza registrada' }} &middot; {{ eq.EDAD or '?' }} anos{% endblock %}
+{% block topbar_actions %}
+<a href="/equinos" class="btn btn-secondary">Volver al listado</a>
+{% endblock %}
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom:20px">
+  <div class="stat-card">
+    <div class="label">Estado actual</div>
+    <div class="value" style="font-size:18px">
+      {% if eq.ESTADO == 'DISPONIBLE' %}<span class="badge badge-verde">Disponible</span>
+      {% elif eq.ESTADO == 'PRECAUCION' %}<span class="badge badge-ambar">Precaucion</span>
+      {% elif eq.ESTADO == 'DESCANSO' %}<span class="badge badge-rojo">Descanso</span>
+      {% elif eq.ESTADO == 'VETERINARIO' %}<span class="badge badge-rojo">Veterinario</span>
+      {% else %}<span class="badge badge-gris">{{ eq.ESTADO }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="stat-card accent-verde">
+    <div class="label">Total de sesiones</div>
+    <div class="value">{{ total_sesiones }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Ultima revision</div>
+    <div class="value" style="font-size:16px">{{ eq.ULTIMA_REVISION or 'No registrada' }}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
+
+<div class="card">
+  <div class="card-header"><h3>Informacion general</h3></div>
+  <div class="card-body">
+    <div class="info-row">
+      <span class="info-label">Nombre</span>
+      <span class="info-value">{{ eq.NOMBRE }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Raza</span>
+      <span class="info-value">{{ eq.RAZA or '-' }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Edad</span>
+      <span class="info-value">{{ eq.EDAD or '-' }} anos</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Color</span>
+      <span class="info-value">{{ eq.COLOR or '-' }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Notas de salud</span>
+      <span class="info-value" style="font-weight:400">{{ eq.NOTAS_SALUD or 'Sin notas' }}</span>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:20px">
+
+  <div class="card">
+    <div class="card-header"><h3>Historial de registros de estado</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th>Encargado</th><th>Estado fisico</th><th>Estado animo</th><th>Disponible</th><th>Observaciones</th></tr>
+        </thead>
+        <tbody>
+          {% for r in historial %}
+          <tr>
+            <td><strong>{{ r.FECHA }}</strong></td>
+            <td>{{ r.ENCARGADO or '-' }}</td>
+            <td>{{ r.ESTADO_FISICO or '-' }}</td>
+            <td>{{ r.ESTADO_ANIMO or '-' }}</td>
+            <td>
+              {% if r.DISPONIBLE == 1 %}<span class="badge badge-verde">Si</span>
+              {% else %}<span class="badge badge-rojo">No</span>{% endif %}
+            </td>
+            <td style="font-size:12px">{{ r.OBSERVACIONES|truncate(50) if r.OBSERVACIONES else '-' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" style="text-align:center;color:var(--gris-30);padding:24px">Sin registros aun</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Sesiones recientes con este equino</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Fecha / Hora</th><th>Paciente</th><th>Terapeuta</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          {% for s in sesiones %}
+          <tr>
+            <td><strong>{{ s.FECHA_HORA|string|truncate(16,true,'') }}</strong></td>
+            <td>{{ s.PACIENTE }}</td>
+            <td>{{ s.TERAPEUTA }}</td>
+            <td>
+              {% if s.ESTADO == 'PROGRAMADA' %}<span class="badge badge-ambar">Programada</span>
+              {% elif s.ESTADO == 'REALIZADA' %}<span class="badge badge-verde">Realizada</span>
+              {% elif s.ESTADO == 'CANCELADA' %}<span class="badge badge-rojo">Cancelada</span>
+              {% else %}<span class="badge badge-gris">{{ s.ESTADO }}</span>{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" style="text-align:center;color:var(--gris-30);padding:24px">Sin sesiones registradas con este equino</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Mantenimiento</h3>
+      <a href="/mantenimiento" class="btn btn-sm btn-secondary">Gestionar</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Tipo</th><th>Fecha programada</th><th>Estado</th><th>Notas</th></tr>
+        </thead>
+        <tbody>
+          {% for m in mantenimientos %}
+          <tr>
+            <td><strong>{{ m.TIPO }}</strong></td>
+            <td>{{ m.FECHA_PROGRAMADA }}</td>
+            <td>
+              {% if m.ESTADO == 'PENDIENTE' %}<span class="badge badge-ambar">Pendiente</span>
+              {% else %}<span class="badge badge-verde">Completado</span>{% endif %}
+            </td>
+            <td style="font-size:12px">{{ m.NOTAS|truncate(50) if m.NOTAS else '-' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" style="text-align:center;color:var(--gris-30);padding:24px">Sin mantenimiento programado</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

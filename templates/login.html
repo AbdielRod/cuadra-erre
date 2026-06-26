@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesion - Cuadra Erre</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      font-family:'Inter',sans-serif;
+      background:#0f2138;
+      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+      position:relative;overflow:hidden;
+    }
+
+    /* Fondo animado con gradiente y formas */
+    .bg-gradient{
+      position:fixed;inset:0;z-index:0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(82,134,193,.35) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(44,95,138,.4) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(15,33,56,1) 0%, #0a1828 100%);
+      animation: bgShift 14s ease-in-out infinite alternate;
+    }
+    @keyframes bgShift{
+      0%{background-position:0% 0%}
+      100%{background-position:8% 8%}
+    }
+    .bg-grid{
+      position:fixed;inset:0;z-index:0;opacity:.05;
+      background-image:
+        linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px);
+      background-size:42px 42px;
+    }
+    .bg-glow{
+      position:absolute;width:480px;height:480px;border-radius:50%;
+      background:radial-gradient(circle, rgba(82,183,212,.18) 0%, transparent 70%);
+      filter:blur(10px);z-index:0;pointer-events:none;
+    }
+    .glow-1{top:-120px;left:-100px;animation:float1 9s ease-in-out infinite}
+    .glow-2{bottom:-140px;right:-100px;animation:float2 11s ease-in-out infinite}
+    @keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,40px)}}
+    @keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-25px,-35px)}}
+
+    .wrap{
+      width:100%;max-width:940px;display:grid;grid-template-columns:1.05fr 1fr;
+      border-radius:14px;overflow:hidden;position:relative;z-index:10;
+      box-shadow:0 30px 90px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.06);
+      opacity:0;transform:translateY(18px) scale(.98);
+      animation:cardIn .65s cubic-bezier(.16,1,.3,1) forwards;
+    }
+    @keyframes cardIn{to{opacity:1;transform:translateY(0) scale(1)}}
+
+    .panel-left{
+      background:
+        linear-gradient(165deg, rgba(30,58,95,.97) 0%, rgba(15,28,46,.99) 100%);
+      padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;
+      position:relative;overflow:hidden;
+    }
+    .panel-left::before{
+      content:'';position:absolute;top:-60%;right:-60%;width:140%;height:140%;
+      background:radial-gradient(circle, rgba(82,134,193,.22) 0%, transparent 60%);
+      pointer-events:none;
+    }
+    .panel-left::after{
+      content:'';position:absolute;inset:0;
+      background-image:radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size:18px 18px;mask-image:linear-gradient(180deg, transparent, rgba(0,0,0,.5) 60%, transparent);
+      pointer-events:none;
+    }
+
+    .brand-mark{
+      display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;
+      border-radius:10px;background:linear-gradient(135deg,#4a7ba6,#2c5f8a);
+      margin-bottom:18px;position:relative;z-index:2;
+      box-shadow:0 8px 20px rgba(44,95,138,.4);
+    }
+    .brand-mark svg{width:24px;height:24px}
+
+    .panel-left h1{font-size:24px;font-weight:800;letter-spacing:.2px;position:relative;z-index:2}
+    .panel-left .tag{
+      font-size:11px;color:rgba(255,255,255,.5);margin-top:6px;letter-spacing:1.2px;
+      text-transform:uppercase;position:relative;z-index:2;font-weight:600;
+    }
+    .panel-left .desc{
+      font-size:13.5px;color:rgba(255,255,255,.72);line-height:1.75;margin-top:22px;
+      position:relative;z-index:2;max-width:340px;
+    }
+    .panel-left .footer-text{
+      font-size:11px;color:rgba(255,255,255,.4);position:relative;z-index:2;margin-top:24px;
+    }
+
+    .panel-right{
+      background:#fff;padding:52px 46px;display:flex;flex-direction:column;justify-content:center;
+      position:relative;
+    }
+    .panel-right h2{font-size:21px;font-weight:800;color:#0f2138;margin-bottom:5px;letter-spacing:-.3px}
+    .panel-right p.sub{font-size:12.5px;color:#6b7585;margin-bottom:28px}
+
+    .form-group{margin-bottom:19px}
+    .form-group label{
+      display:block;font-size:11px;font-weight:700;color:#3d4a5c;margin-bottom:7px;
+      letter-spacing:.6px;text-transform:uppercase;
+    }
+    .input-wrap{position:relative}
+    .input-wrap .input-icon{
+      position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#a3acba;
+      pointer-events:none;transition:.2s;
+    }
+    .input-wrap .input-icon svg{width:15px;height:15px}
+    input{
+      width:100%;padding:12px 14px 12px 38px;border:1.5px solid #e2e6ea;border-radius:8px;
+      font-family:'Inter',sans-serif;font-size:13.5px;color:#0f2138;outline:none;
+      transition:border-color .2s, box-shadow .2s, background .2s;background:#fafbfc;
+    }
+    input:focus{border-color:#2c5f8a;background:#fff;box-shadow:0 0 0 4px rgba(44,95,138,.1)}
+    input:focus + .input-icon, .input-wrap:has(input:focus) .input-icon{color:#2c5f8a}
+    input.error{border-color:#c0392b;background:#fdf6f6}
+    input.ok{border-color:#2d6a4f}
+    .hint{font-size:10.5px;color:#a3acba;margin-top:6px;display:flex;align-items:center;gap:5px}
+    .hint.red{color:#c0392b}
+    .hint.green{color:#2d6a4f}
+    .hint .fmt{
+      font-family:'SF Mono','Courier New',monospace;background:#f4f6f8;padding:1.5px 6px;
+      border-radius:4px;border:1px solid #e2e6ea;font-size:10px;
+    }
+
+    .alert{
+      padding:11px 14px;border-radius:8px;font-size:12.5px;font-weight:500;margin-bottom:20px;
+      border-left:3px solid;display:flex;align-items:center;gap:8px;
+      animation:alertIn .3s ease;
+    }
+    @keyframes alertIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+    .alert-danger{background:#fdecea;color:#a73838;border-left-color:#a73838}
+    .alert-success{background:#e9f3ee;color:#2d6a4f;border-left-color:#2d6a4f}
+    .alert-warning{background:#fbf2e1;color:#9a6b1f;border-left-color:#9a6b1f}
+
+    .btn-login{
+      width:100%;padding:14px;background:linear-gradient(135deg,#1e3a5f,#2c5f8a);
+      color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:700;
+      font-family:'Inter',sans-serif;cursor:pointer;transition:.25s;letter-spacing:.3px;
+      position:relative;overflow:hidden;margin-top:6px;
+      box-shadow:0 4px 16px rgba(30,58,95,.3);
+    }
+    .btn-login::before{
+      content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+      transition:left .5s;
+    }
+    .btn-login:hover::before{left:100%}
+    .btn-login:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(30,58,95,.4)}
+    .btn-login:active{transform:translateY(0)}
+
+    .footer-note{
+      text-align:center;margin-top:24px;font-size:11px;color:#a3acba;
+    }
+
+    @media(max-width:760px){
+      .wrap{grid-template-columns:1fr;max-width:420px}
+      .panel-left{display:none}
+      .panel-right{padding:40px 30px}
+    }
+  </style>
+</head>
+<body>
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+
+<div class="wrap">
+
+  <div class="panel-left">
+    <div>
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M4 20 L4 10 L12 4 L20 10 L20 20" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 20 L9 14 L15 14 L15 20" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>CUADRA ERRE</h1>
+      <div class="tag">Sistema de Gestion Clinica</div>
+      <p class="desc">
+        Plataforma integral para la coordinacion clinica, seguimiento de pacientes
+        y administracion operativa del centro de equinoterapia.
+      </p>
+    </div>
+    <div class="footer-text">
+      
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <h2>Iniciar sesion</h2>
+    <p class="sub">Ingrese sus credenciales para acceder al sistema</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="/" id="frm">
+      <div class="form-group">
+        <label>Usuario</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0" stroke-linecap="round"/></svg>
+          </span>
+          <input type="text" name="username" id="inp_u" placeholder="@usuario#"
+                 autocomplete="off" spellcheck="false" oninput="chkU(this)">
+        </div>
+        <div class="hint" id="hint_u">Formato: <span class="fmt">@usuario#</span></div>
+      </div>
+      <div class="form-group">
+        <label>Contrasena</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round"/></svg>
+          </span>
+          <input type="password" name="password" id="inp_p" placeholder="#abc123."
+                 autocomplete="off" oninput="chkP(this)">
+        </div>
+        <div class="hint" id="hint_p">Formato: <span class="fmt">#abc123.</span></div>
+      </div>
+      <button type="submit" class="btn-login">Iniciar sesion</button>
+    </form>
+
+    <div class="footer-note">
+      Sistema de uso interno &mdash; Cuadra Erre &copy; 2026
+    </div>
+  </div>
+
+</div>
+
+<script>
+const RE_U = /^@[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2,30}#$/;
+const RE_P = /^#[a-zA-Z]{3}[0-9]{1,10}[.!@$%&*\-_]+$/;
+
+function setH(inp, hintEl, ok, msg){
+  inp.className = ok ? 'ok' : 'error';
+  hintEl.className = 'hint ' + (ok ? 'green' : 'red');
+  hintEl.textContent = msg;
+}
+
+function chkU(inp){
+  const h=document.getElementById('hint_u');
+  if(!inp.value){inp.className='';h.className='hint';h.innerHTML='Formato: <span class="fmt">@usuario#</span>';return;}
+  setH(inp,h,RE_U.test(inp.value),RE_U.test(inp.value)?'Formato valido':'Debe ser @usuario# solo letras');
+}
+function chkP(inp){
+  const h=document.getElementById('hint_p');
+  if(!inp.value){inp.className='';h.className='hint';h.innerHTML='Formato: <span class="fmt">#abc123.</span>';return;}
+  setH(inp,h,RE_P.test(inp.value),RE_P.test(inp.value)?'Formato valido':'Debe ser #abc + numeros + simbolo');
+}
+document.getElementById('frm').addEventListener('submit',function(e){
+  const u=document.getElementById('inp_u').value;
+  const p=document.getElementById('inp_p').value;
+  if(!RE_U.test(u)){chkU(document.getElementById('inp_u'));e.preventDefault();return;}
+  if(!RE_P.test(p)){chkP(document.getElementById('inp_p'));e.preventDefault();}
+});
+</script>
+</body>
+</html>

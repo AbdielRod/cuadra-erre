@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil - Cuadra Erre{% endblock %}
+{% block page_title %}Mi Perfil{% endblock %}
+{% block page_sub %}Informacion de cuenta y seguridad{% endblock %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start">
+
+<div class="card">
+  <div class="card-header"><h3>Informacion de cuenta</h3></div>
+  <div class="card-body">
+    <div class="info-row">
+      <span class="info-label">Usuario</span>
+      <span class="info-value">{{ usuario.USERNAME }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Nombre completo</span>
+      <span class="info-value">{{ usuario.NOMBRE }} {{ usuario.APELLIDO or '' }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Correo electronico</span>
+      <span class="info-value">{{ usuario.EMAIL or '-' }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Telefono</span>
+      <span class="info-value">{{ usuario.TELEFONO or '-' }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Rol asignado</span>
+      <span class="info-value">{{ session.rol }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Cambiar contrasena</h3></div>
+  <div class="card-body">
+    <form method="POST" action="/perfil">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>CONTRASENA ACTUAL *</label>
+          <input type="password" name="password_actual" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label>NUEVA CONTRASENA *</label>
+          <input type="password" name="password_nueva" placeholder="#abc123." autocomplete="off" required>
+        </div>
+      </div>
+      <div style="background:var(--azul-bg);border-left:3px solid var(--azul-med);border-radius:4px;padding:11px 14px;margin:16px 0;font-size:11.5px;color:var(--azul-osc)">
+        La nueva contrasena debe seguir el formato: # + 3 letras + numeros + simbolo. Ejemplo: #abc123.
+      </div>
+      <button type="submit" class="btn btn-primary">Actualizar contrasena</button>
+    </form>
+  </div>
+</div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Cuadra Erre - Sistema de Gestion Clinica{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --azul-osc:#1e3a5f;
+      --azul-med:#2c5f8a;
+      --azul-clr:#4a7ba6;
+      --azul-bg:#eef3f8;
+      --gris-90:#1a2942;
+      --gris-70:#3d4a5c;
+      --gris-50:#5a6678;
+      --gris-30:#8a94a3;
+      --gris-10:#d4d9e0;
+      --bg:#f4f6f8;
+      --card:#ffffff;
+      --border:#e2e6ea;
+      --rojo:#a73838;
+      --rojo-bg:#f9eded;
+      --verde:#2d6a4f;
+      --verde-bg:#e9f3ee;
+      --ambar:#9a6b1f;
+      --ambar-bg:#fbf2e1;
+      --sidebar:250px;
+      --radius:6px;
+      --shadow:0 1px 2px rgba(20,30,50,.06), 0 2px 8px rgba(20,30,50,.04);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--gris-90);font-size:13.5px;line-height:1.5}
+    a{color:inherit;text-decoration:none}
+
+    .sidebar{
+      position:fixed;top:0;left:0;width:var(--sidebar);height:100vh;
+      background:var(--azul-osc);
+      display:flex;flex-direction:column;z-index:100;overflow-y:auto;
+      border-right:1px solid rgba(255,255,255,.06);
+    }
+    .sidebar-brand{padding:24px 24px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .sidebar-brand h1{color:#fff;font-size:16px;font-weight:700;letter-spacing:.3px}
+    .sidebar-brand span{color:rgba(255,255,255,.5);font-size:10.5px;display:block;margin-top:3px;letter-spacing:.2px;text-transform:uppercase}
+    .sidebar-user{padding:14px 24px;background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.08)}
+    .sidebar-user strong{color:#fff;display:block;font-size:13px;margin-bottom:4px;font-weight:600}
+    .sidebar-badge{display:inline-block;background:rgba(255,255,255,.15);color:#fff;font-size:9.5px;font-weight:600;padding:3px 9px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase}
+    .nav-section{padding:16px 24px 6px;font-size:10px;font-weight:600;color:rgba(255,255,255,.32);letter-spacing:1px;text-transform:uppercase}
+    .nav-item{
+      display:flex;align-items:center;gap:11px;padding:9px 24px;
+      color:rgba(255,255,255,.68);font-size:13px;font-weight:500;
+      border-left:2px solid transparent;transition:.12s;cursor:pointer;
+    }
+    .nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
+    .nav-item.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#fff;font-weight:600}
+    .nav-item .dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;opacity:.7}
+    .sidebar-footer{margin-top:auto;padding:18px 24px;border-top:1px solid rgba(255,255,255,.1)}
+    .btn-logout{
+      width:100%;padding:9px;background:transparent;border:1px solid rgba(255,255,255,.25);
+      color:rgba(255,255,255,.75);border-radius:var(--radius);cursor:pointer;font-size:12.5px;
+      font-family:'Inter',sans-serif;font-weight:500;display:flex;align-items:center;justify-content:center;gap:7px;
+      transition:.15s;
+    }
+    .btn-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+
+    .main{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column}
+    .topbar{
+      background:var(--card);border-bottom:1px solid var(--border);
+      padding:16px 32px;display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:50;gap:24px;
+    }
+    .topbar-title{font-size:17px;font-weight:700;color:var(--gris-90);letter-spacing:-.2px}
+    .topbar-sub{font-size:12px;color:var(--gris-50);margin-top:2px}
+    .topbar-search{position:relative;flex:1;max-width:340px}
+    .topbar-search input{
+      width:100%;padding:8px 14px 8px 34px;border:1.5px solid var(--gris-10);border-radius:5px;
+      font-family:'Inter',sans-serif;font-size:12.5px;color:var(--gris-90);background:#fafbfc;outline:none;transition:.15s;
+    }
+    .topbar-search input:focus{border-color:var(--azul-med);background:#fff;box-shadow:0 0 0 3px rgba(44,95,138,.1)}
+    .topbar-search .search-icon{
+      position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--gris-30);font-size:13px;pointer-events:none;
+    }
+    .search-results{
+      position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--border);
+      border-radius:6px;box-shadow:0 8px 24px rgba(20,30,50,.15);max-height:340px;overflow-y:auto;z-index:300;display:none;
+    }
+    .search-results.open{display:block}
+    .search-result-item{
+      padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+    }
+    .search-result-item:last-child{border-bottom:none}
+    .search-result-item:hover{background:#fafbfc}
+    .search-result-title{font-size:12.5px;font-weight:600;color:var(--gris-90)}
+    .search-result-type{font-size:10px;color:var(--gris-30);text-transform:uppercase;letter-spacing:.4px}
+    .search-empty{padding:16px;text-align:center;font-size:12px;color:var(--gris-30)}
+    .page-body{padding:32px;flex:1}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card-header{
+      padding:15px 20px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .card-header h3{font-size:13.5px;font-weight:600;color:var(--gris-90);letter-spacing:.1px}
+    .card-body{padding:20px}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-top:3px solid var(--azul-med)}
+    .stat-card .label{font-size:10.5px;font-weight:600;color:var(--gris-50);text-transform:uppercase;letter-spacing:.6px}
+    .stat-card .value{font-size:28px;font-weight:700;line-height:1.15;margin:6px 0 2px;color:var(--gris-90)}
+    .stat-card .sub{font-size:11px;color:var(--gris-30)}
+    .stat-card.accent-rojo{border-top-color:var(--rojo)}
+    .stat-card.accent-verde{border-top-color:var(--verde)}
+    .stat-card.accent-ambar{border-top-color:var(--ambar)}
+
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse}
+    th{padding:10px 16px;text-align:left;font-size:10.5px;font-weight:600;color:var(--gris-50);text-transform:uppercase;letter-spacing:.5px;background:#fafbfc;border-bottom:1.5px solid var(--border)}
+    td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--gris-70)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#fafbfc}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px;letter-spacing:.2px}
+    .badge-azul{background:var(--azul-bg);color:var(--azul-osc)}
+    .badge-rojo{background:var(--rojo-bg);color:var(--rojo)}
+    .badge-ambar{background:var(--ambar-bg);color:var(--ambar)}
+    .badge-verde{background:var(--verde-bg);color:var(--verde)}
+    .badge-gris{background:#eef0f2;color:var(--gris-50)}
+    .status-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+    .dot-verde{background:#2d6a4f}
+    .dot-ambar{background:#9a6b1f}
+    .dot-rojo{background:#a73838}
+    .dot-gris{background:#8a94a3}
+
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+    .form-group{display:flex;flex-direction:column;gap:6px}
+    .form-group label{font-size:11.5px;font-weight:600;color:var(--gris-70);letter-spacing:.2px}
+    .form-group input,.form-group select,.form-group textarea{
+      padding:9px 12px;border:1.5px solid var(--gris-10);border-radius:var(--radius);
+      font-family:'Inter',sans-serif;font-size:13px;color:var(--gris-90);
+      transition:.15s;background:#fff;outline:none;
+    }
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+      border-color:var(--azul-med);box-shadow:0 0 0 3px rgba(44,95,138,.12);
+    }
+    .form-group input.error{border-color:var(--rojo)}
+    .hint{font-size:11px;color:var(--gris-30);margin-top:1px}
+    .hint.red{color:var(--rojo)}
+    .hint.green{color:var(--verde)}
+    textarea{resize:vertical;min-height:80px}
+
+    .btn{
+      display:inline-flex;align-items:center;gap:7px;padding:9px 18px;
+      border-radius:var(--radius);font-size:12.5px;font-weight:600;cursor:pointer;
+      border:none;font-family:'Inter',sans-serif;transition:.15s;text-decoration:none;letter-spacing:.1px;
+    }
+    .btn-primary{background:var(--azul-osc);color:#fff}
+    .btn-primary:hover{background:#162c49}
+    .btn-secondary{background:var(--card);color:var(--gris-70);border:1.5px solid var(--gris-10)}
+    .btn-secondary:hover{background:#fafbfc;border-color:var(--gris-30)}
+    .btn-danger{background:var(--rojo);color:#fff}
+    .btn-danger:hover{background:#8a2c2c}
+    .btn-sm{padding:6px 12px;font-size:11.5px}
+
+    .alerts{padding:0 32px;margin-top:16px}
+    .alert{
+      display:flex;align-items:center;gap:10px;padding:11px 16px;
+      border-radius:var(--radius);font-size:12.5px;font-weight:500;margin-bottom:8px;
+      border-left:3px solid;
+    }
+    .alert-success{background:var(--verde-bg);color:var(--verde);border-left-color:var(--verde)}
+    .alert-danger{background:var(--rojo-bg);color:var(--rojo);border-left-color:var(--rojo)}
+    .alert-warning{background:var(--ambar-bg);color:var(--ambar);border-left-color:var(--ambar)}
+    .alert-close{margin-left:auto;cursor:pointer;opacity:.5;font-size:15px}
+
+    .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(20,30,50,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
+    .modal-backdrop.open{display:flex}
+    .modal{background:var(--card);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+    .modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-header h4{font-size:14.5px;font-weight:700;color:var(--gris-90)}
+    .modal-close{cursor:pointer;font-size:20px;color:var(--gris-30);line-height:1}
+    .modal-body{padding:22px}
+    .modal-footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+    .info-row{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-bottom:1px solid var(--border)}
+    .info-row:last-child{border-bottom:none}
+    .info-label{font-size:10.5px;font-weight:600;color:var(--gris-30);text-transform:uppercase;letter-spacing:.5px}
+    .info-value{font-size:13.5px;color:var(--gris-90);font-weight:500}
+
+    @media(max-width:768px){
+      :root{--sidebar:0px}
+      .sidebar{transform:translateX(-250px);transition:.25s}
+      .sidebar.open{transform:translateX(0)}
+      .main{margin-left:0}
+      .page-body{padding:16px}
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if session.uid %}
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <h1>CUADRA ERRE</h1>
+    <span>Sistema de Gestion Clinica</span>
+  </div>
+  <div class="sidebar-user">
+    <strong>{{ session.nombre }}</strong>
+    <span class="sidebar-badge">{{ session.rol }}</span>
+  </div>
+
+  <div class="nav-section">Principal</div>
+  <a class="nav-item {% if request.endpoint=='dashboard' %}active{% endif %}" href="/dashboard">
+    <span class="dot"></span>Dashboard
+  </a>
+  <a class="nav-item {% if request.endpoint in ['agenda','sesion_detalle'] %}active{% endif %}" href="/agenda">
+    <span class="dot"></span>Agenda
+  </a>
+
+  {% if session.rol in ['ADMINISTRADOR','COORDINADOR','TERAPEUTA'] %}
+  <div class="nav-section">Clinico</div>
+  <a class="nav-item {% if request.endpoint in ['pacientes','expediente'] %}active{% endif %}" href="/pacientes">
+    <span class="dot"></span>Pacientes
+  </a>
+  <a class="nav-item {% if request.endpoint=='notificaciones' %}active{% endif %}" href="/notificaciones">
+    <span class="dot"></span>Notificaciones
+  </a>
+  {% endif %}
+
+  <div class="nav-section">Operaciones</div>
+  <a class="nav-item {% if request.endpoint=='equinos' or request.endpoint=='equino_detalle' %}active{% endif %}" href="/equinos">
+    <span class="dot"></span>Equinos
+  </a>
+  {% if session.rol in ['ADMINISTRADOR','ENCARGADO_EQUINOS','COORDINADOR'] %}
+  <a class="nav-item {% if request.endpoint=='equinos_agenda' %}active{% endif %}" href="/equinos/agenda">
+    <span class="dot"></span>Agenda de equinos
+  </a>
+  {% endif %}
+  {% if session.rol in ['ADMINISTRADOR','ENCARGADO_EQUINOS'] %}
+  <a class="nav-item {% if request.endpoint=='mantenimiento' %}active{% endif %}" href="/mantenimiento">
+    <span class="dot"></span>Mantenimiento
+  </a>
+  {% endif %}
+  {% if session.rol in ['ADMINISTRADOR','COORDINADOR'] %}
+  <a class="nav-item {% if request.endpoint=='reporte' %}active{% endif %}" href="/reporte">
+    <span class="dot"></span>Reporte Semanal
+  </a>
+  {% endif %}
+
+  {% if session.rol == 'ADMINISTRADOR' %}
+  <div class="nav-section">Administracion</div>
+  <a class="nav-item {% if request.endpoint=='usuarios' %}active{% endif %}" href="/usuarios">
+    <span class="dot"></span>Usuarios
+  </a>
+  <a class="nav-item {% if request.endpoint=='auditoria' %}active{% endif %}" href="/auditoria">
+    <span class="dot"></span>Auditoria
+  </a>
+  <a class="nav-item {% if request.endpoint=='configuracion' %}active{% endif %}" href="/configuracion">
+    <span class="dot"></span>Configuracion
+  </a>
+  {% endif %}
+
+  <div class="nav-section">Cuenta</div>
+  <a class="nav-item {% if request.endpoint=='perfil' %}active{% endif %}" href="/perfil">
+    <span class="dot"></span>Mi perfil
+  </a>
+
+  <div class="sidebar-footer">
+    <form method="POST" action="/logout">
+      <button class="btn-logout" type="submit">Cerrar sesion</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+<div class="main">
+  {% if session.uid %}
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-sub">{% block page_sub %}{% endblock %}</div>
+    </div>
+    <div class="topbar-search">
+      <span class="search-icon">&#9906;</span>
+      <input type="text" id="globalSearch" placeholder="Buscar pacientes, equinos, sesiones..." autocomplete="off">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    {% block topbar_actions %}{% endblock %}
+  </div>
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alerts">
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat if cat != 'warning' else 'warning' }}">
+        {{ msg }}
+        <span class="alert-close" onclick="this.parentElement.remove()">&times;</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="page-body">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script>
+  setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(a => {
+      a.style.transition = '.4s';
+      a.style.opacity = '0';
+      setTimeout(() => a.remove(), 400);
+    });
+  }, 5000);
+
+  function openModal(id){ document.getElementById(id).classList.add('open') }
+  function closeModal(id){ document.getElementById(id).classList.remove('open') }
+
+  document.querySelectorAll('.modal-backdrop').forEach(b => {
+    b.addEventListener('click', e => { if(e.target===b) b.classList.remove('open') });
+  });
+
+  // Busqueda global
+  const searchInput = document.getElementById('globalSearch');
+  const searchResults = document.getElementById('searchResults');
+  let searchTimer = null;
+
+  if(searchInput){
+    searchInput.addEventListener('input', function(){
+      clearTimeout(searchTimer);
+      const q = this.value.trim();
+      if(q.length < 2){
+        searchResults.classList.remove('open');
+        return;
+      }
+      searchTimer = setTimeout(() => {
+        fetch('/api/buscar?q=' + encodeURIComponent(q))
+          .then(r => r.json())
+          .then(data => {
+            const items = data.resultados || [];
+            if(items.length === 0){
+              searchResults.innerHTML = '<div class="search-empty">Sin resultados para "' + q + '"</div>';
+            } else {
+              searchResults.innerHTML = items.map(it =>
+                `<div class="search-result-item" onclick="location.href='${it.url}'">
+                   <span class="search-result-title">${it.titulo}</span>
+                   <span class="search-result-type">${it.tipo}</span>
+                 </div>`
+              ).join('');
+            }
+            searchResults.classList.add('open');
+          });
+      }, 250);
+    });
+
+    document.addEventListener('click', function(e){
+      if(!searchInput.contains(e.target) && !searchResults.contains(e.target)){
+        searchResults.classList.remove('open');
+      }
+    });
+  }
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Sesion #{{ sesion.ID }} - Cuadra Erre{% endblock %}
+{% block page_title %}Detalle de Sesion{% endblock %}
+{% block page_sub %}{{ sesion.PACIENTE }} - {{ sesion.FECHA_HORA|string|truncate(16,true,'') }}{% endblock %}
+{% block topbar_actions %}
+<a href="/agenda" class="btn btn-secondary">Volver</a>
+{% endblock %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start">
+
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div class="card">
+    <div class="card-header"><h3>Informacion</h3></div>
+    <div class="card-body">
+      <div class="info-row">
+        <span class="info-label">Paciente</span>
+        <span class="info-value"><a href="/pacientes/{{ sesion.PID }}" style="color:var(--azul-med)">{{ sesion.PACIENTE }}</a></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Terapeuta</span>
+        <span class="info-value">{{ sesion.TERAPEUTA }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Fecha y hora</span>
+        <span class="info-value">{{ sesion.FECHA_HORA|string|truncate(16,true,'') }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Duracion</span>
+        <span class="info-value">{{ sesion.DURACION_MIN or 45 }} minutos</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Equino</span>
+        <span class="info-value">{{ sesion.EQUINO or '-' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Area</span>
+        <span class="info-value">{{ sesion.AREA or '-' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Estado</span>
+        <span class="info-value">
+          {% if sesion.ESTADO == 'PROGRAMADA' %}
+            <span class="badge badge-ambar">Programada</span>
+          {% elif sesion.ESTADO == 'REALIZADA' %}
+            <span class="badge badge-verde">Realizada</span>
+          {% elif sesion.ESTADO == 'CANCELADA' %}
+            <span class="badge badge-rojo">Cancelada</span>
+          {% elif sesion.ESTADO == 'EN_CURSO' %}
+            <span class="badge badge-azul">En curso</span>
+          {% else %}
+            <span class="badge badge-gris">{{ sesion.ESTADO }}</span>
+          {% endif %}
+        </span>
+      </div>
+      {% if sesion.OBJETIVOS %}
+      <div class="info-row">
+        <span class="info-label">Objetivos</span>
+        <span class="info-value" style="font-weight:400;color:var(--gris-70)">{{ sesion.OBJETIVOS }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if session.rol in ['ADMINISTRADOR','COORDINADOR'] and sesion.ESTADO == 'PROGRAMADA' %}
+  <form method="POST" action="/sesion/{{ sesion.ID }}/cancelar"
+        onsubmit="return confirm('Confirma cancelar esta sesion?')">
+    <button class="btn btn-danger" style="width:100%;justify-content:center" type="submit">
+      Cancelar sesion
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Nota clinica post-sesion</h3>
+    {% if sesion.ESTADO == 'REALIZADA' %}
+      <span class="badge badge-verde">Completada</span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if sesion.ESTADO == 'CANCELADA' %}
+    <div style="text-align:center;padding:40px;color:var(--gris-30)">
+      Esta sesion fue cancelada
+    </div>
+    {% else %}
+    <form method="POST" action="/sesion/{{ sesion.ID }}">
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group">
+            <label>AREA TRABAJADA</label>
+            <select name="area_trabajada">
+              <option value="">Seleccionar</option>
+              <option value="EQUILIBRIO" {% if sesion.AREA_TRABAJADA=='EQUILIBRIO' %}selected{% endif %}>Equilibrio</option>
+              <option value="COORDINACION" {% if sesion.AREA_TRABAJADA=='COORDINACION' %}selected{% endif %}>Coordinacion</option>
+              <option value="FUERZA" {% if sesion.AREA_TRABAJADA=='FUERZA' %}selected{% endif %}>Fuerza</option>
+              <option value="SENSORIAL" {% if sesion.AREA_TRABAJADA=='SENSORIAL' %}selected{% endif %}>Sensorial</option>
+              <option value="COMUNICACION" {% if sesion.AREA_TRABAJADA=='COMUNICACION' %}selected{% endif %}>Comunicacion</option>
+              <option value="CONFIANZA" {% if sesion.AREA_TRABAJADA=='CONFIANZA' %}selected{% endif %}>Confianza</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ESTADO DEL PACIENTE</label>
+            <select name="estado_paciente">
+              <option value="">Seleccionar</option>
+              <option value="COLABORATIVO" {% if sesion.ESTADO_PACIENTE=='COLABORATIVO' %}selected{% endif %}>Colaborativo</option>
+              <option value="DISTRAIDO" {% if sesion.ESTADO_PACIENTE=='DISTRAIDO' %}selected{% endif %}>Distraido</option>
+              <option value="IRRITABLE" {% if sesion.ESTADO_PACIENTE=='IRRITABLE' %}selected{% endif %}>Irritable</option>
+              <option value="CANSADO" {% if sesion.ESTADO_PACIENTE=='CANSADO' %}selected{% endif %}>Cansado</option>
+              <option value="MUY_BIEN" {% if sesion.ESTADO_PACIENTE=='MUY_BIEN' %}selected{% endif %}>Muy bien</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>NOTAS DE LA SESION</label>
+          <textarea name="notas_sesion" rows="4"
+                    placeholder="Ej: Hoy el paciente aguanto el trote 3 vueltas mas que la semana pasada...">{{ sesion.NOTAS_SESION or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label>RECOMENDACIONES PARA CASA</label>
+          <textarea name="recomendaciones_casa" rows="3"
+                    placeholder="Ej: Ejercicios de marcha en linea recta, 10 minutos diarios...">{{ sesion.RECOMENDACIONES_CASA or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label>MARCAR SESION COMO</label>
+          <select name="estado">
+            <option value="PROGRAMADA" {% if sesion.ESTADO=='PROGRAMADA' %}selected{% endif %}>Programada</option>
+            <option value="EN_CURSO" {% if sesion.ESTADO=='EN_CURSO' %}selected{% endif %}>En curso</option>
+            <option value="REALIZADA" {% if sesion.ESTADO=='REALIZADA' %}selected{% endif %}>Realizada</option>
+          </select>
+        </div>
+
+        <div style="background:var(--azul-bg);border-left:3px solid var(--azul-med);border-radius:4px;padding:11px 14px;font-size:11.5px;color:var(--azul-osc)">
+          Al guardar como "Realizada" se enviara automaticamente un correo con el resumen a los familiares registrados.
+        </div>
+
+        <div style="display:flex;justify-content:flex-end">
+          <button type="submit" class="btn btn-primary" style="padding:11px 28px">
+            Guardar y notificar
+          </button>
+        </div>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+</div>
+{% endblock %}

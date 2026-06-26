@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Usuarios - Cuadra Erre{% endblock %}
+{% block page_title %}Usuarios{% endblock %}
+{% block page_sub %}Solo el administrador puede crear y editar usuarios{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="openModal('modalNuevo')">Nuevo usuario</button>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3>Usuarios del sistema</h3>
+    <span style="font-size:11.5px;color:var(--gris-30)">{{ usuarios|length }} registros</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Telefono</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td><strong>{{ u.USERNAME }}</strong></td>
+          <td>{{ u.NOMBRE }} {{ u.APELLIDO or '' }}</td>
+          <td>{{ u.EMAIL or '-' }}</td>
+          <td>{{ u.TELEFONO or '-' }}</td>
+          <td>
+            {% if u.ROL_NOM == 'ADMINISTRADOR' %}
+              <span class="badge badge-azul">Administrador</span>
+            {% elif u.ROL_NOM == 'TERAPEUTA' %}
+              <span class="badge badge-verde">Terapeuta</span>
+            {% elif u.ROL_NOM == 'COORDINADOR' %}
+              <span class="badge badge-ambar">Coordinador</span>
+            {% elif u.ROL_NOM == 'ENCARGADO_EQUINOS' %}
+              <span class="badge badge-gris">Encargado equinos</span>
+            {% else %}
+              <span class="badge badge-gris">{{ u.ROL_NOM }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.ACTIVO == 1 %}
+              <span class="badge badge-verde">Activo</span>
+            {% else %}
+              <span class="badge badge-rojo">Inactivo</span>
+            {% endif %}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-secondary"
+                    onclick="openEdit({{ u.ID }},'{{ u.NOMBRE }}','{{ u.APELLIDO or '' }}',
+                    '{{ u.EMAIL or '' }}','{{ u.TELEFONO or '' }}',{{ u.ROL_ID }},{{ u.ACTIVO }})">
+              Editar
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--gris-30);padding:30px">Sin usuarios registrados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalNuevo">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Nuevo usuario</h4>
+      <span class="modal-close" onclick="closeModal('modalNuevo')">&times;</span>
+    </div>
+    <form method="POST" action="/usuarios/nuevo">
+      <div class="modal-body">
+        <div style="background:var(--azul-bg);border-left:3px solid var(--azul-med);border-radius:4px;padding:11px 14px;margin-bottom:16px;font-size:11.5px;color:var(--azul-osc)">
+          <strong>Formato de credenciales:</strong><br>
+          Usuario: letras, numeros, puntos y guiones (3-30 caracteres)<br>
+          Contrasena: formato #abc123. (3 letras + numeros + simbolo)
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE DE USUARIO *</label>
+            <input type="text" name="username" placeholder="Ej: terapeuta2" autocomplete="off" required>
+          </div>
+          <div class="form-group">
+            <label>CONTRASENA *</label>
+            <input type="password" name="password" placeholder="#abc123." autocomplete="off" required>
+          </div>
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" placeholder="Ej: Laura" required>
+          </div>
+          <div class="form-group">
+            <label>APELLIDO</label>
+            <input type="text" name="apellido" placeholder="Ej: Martinez">
+          </div>
+          <div class="form-group">
+            <label>EMAIL</label>
+            <input type="text" name="email" placeholder="Ej: laura@cuadraerre.mx">
+          </div>
+          <div class="form-group">
+            <label>TELEFONO</label>
+            <input type="text" name="telefono" placeholder="Ej: 6241234567">
+          </div>
+          <div class="form-group">
+            <label>ROL *</label>
+            <select name="rol_id" required>
+              <option value="">Seleccionar</option>
+              {% for r in roles %}
+              <option value="{{ r.ID }}">{{ r.NOMBRE }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalNuevo')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalEditar">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Editar usuario</h4>
+      <span class="modal-close" onclick="closeModal('modalEditar')">&times;</span>
+    </div>
+    <form method="POST" id="frmEditar">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>NOMBRE *</label>
+            <input type="text" name="nombre" id="edit_nom" required>
+          </div>
+          <div class="form-group">
+            <label>APELLIDO</label>
+            <input type="text" name="apellido" id="edit_ape">
+          </div>
+          <div class="form-group">
+            <label>EMAIL</label>
+            <input type="text" name="email" id="edit_email">
+          </div>
+          <div class="form-group">
+            <label>TELEFONO</label>
+            <input type="text" name="telefono" id="edit_tel">
+          </div>
+          <div class="form-group">
+            <label>ROL *</label>
+            <select name="rol_id" id="edit_rol" required>
+              {% for r in roles %}
+              <option value="{{ r.ID }}">{{ r.NOMBRE }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ESTADO</label>
+            <select name="activo" id="edit_activo">
+              <option value="1">Activo</option>
+              <option value="0">Inactivo</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>NUEVA CONTRASENA (dejar vacio para no cambiar)</label>
+            <input type="password" name="password" id="edit_pw" placeholder="#abc123." autocomplete="off">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalEditar')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function openEdit(id,nom,ape,email,tel,rol,activo){
+  document.getElementById('frmEditar').action='/usuarios/'+id+'/editar';
+  document.getElementById('edit_nom').value=nom;
+  document.getElementById('edit_ape').value=ape;
+  document.getElementById('edit_email').value=email;
+  document.getElementById('edit_tel').value=tel;
+  document.getElementById('edit_rol').value=rol;
+  document.getElementById('edit_activo').value=activo;
+  document.getElementById('edit_pw').value='';
+  openModal('modalEditar');
+}
+</script>
+{% endblock %}

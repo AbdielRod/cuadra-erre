@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Cuadra Erre{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_sub %}Resumen general - {{ session.rol }}{% endblock %}
+{% block content %}
+
+{% if session.rol in ['ADMINISTRADOR','COORDINADOR'] %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">Sesiones hoy</div>
+    <div class="value" data-counter="{{ stats.sesiones_hoy or 0 }}">0</div>
+    <div class="sub">programadas y realizadas</div>
+  </div>
+  <div class="stat-card accent-verde">
+    <div class="label">Pacientes activos</div>
+    <div class="value" data-counter="{{ stats.pacientes or 0 }}">0</div>
+    <div class="sub">en el sistema</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Equinos disponibles</div>
+    <div class="value" data-counter="{{ stats.equinos_disp or 0 }}">0</div>
+    <div class="sub">de {{ stats.equinos_total or 0 }} totales</div>
+  </div>
+  <div class="stat-card accent-ambar">
+    <div class="label">Notificaciones pendientes</div>
+    <div class="value" data-counter="{{ stats.notif_pendientes or 0 }}">0</div>
+    <div class="sub">por confirmar envio</div>
+  </div>
+</div>
+
+{% if stats.pacientes_sin_seguimiento or stats.equinos_atencion %}
+<div style="display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap">
+  {% if stats.pacientes_sin_seguimiento %}
+  <div style="flex:1;min-width:260px;background:var(--ambar-bg);border-left:3px solid var(--ambar);border-radius:5px;padding:13px 16px">
+    <strong style="color:var(--ambar);font-size:12.5px">{{ stats.pacientes_sin_seguimiento }} paciente(s) sin sesion en los ultimos 14 dias</strong>
+    <div style="font-size:11.5px;color:#7a5414;margin-top:2px">Revisar seguimiento clinico en la seccion Pacientes</div>
+  </div>
+  {% endif %}
+  {% if stats.equinos_atencion %}
+  <div style="flex:1;min-width:260px;background:var(--rojo-bg);border-left:3px solid var(--rojo);border-radius:5px;padding:13px 16px">
+    <strong style="color:var(--rojo);font-size:12.5px">{{ stats.equinos_atencion }} equino(s) requieren atencion</strong>
+    <div style="font-size:11.5px;color:#7a2a2a;margin-top:2px">En precaucion, descanso o veterinario</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% elif session.rol == 'TERAPEUTA' %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">Mis sesiones hoy</div>
+    <div class="value" data-counter="{{ stats.mis_hoy or 0 }}">0</div>
+    <div class="sub">asignadas a usted</div>
+  </div>
+  <div class="stat-card accent-verde">
+    <div class="label">Mis pacientes</div>
+    <div class="value" data-counter="{{ stats.mis_pacientes or 0 }}">0</div>
+    <div class="sub">historial activo</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Sesiones esta semana</div>
+    <div class="value" data-counter="{{ stats.mis_semana or 0 }}">0</div>
+    <div class="sub">total programado</div>
+  </div>
+  {% if stats.notas_pendientes %}
+  <div class="stat-card accent-rojo">
+    <div class="label">Notas pendientes</div>
+    <div class="value" data-counter="{{ stats.notas_pendientes }}">0</div>
+    <div class="sub">sesiones sin documentar</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if stats.proxima_sesion %}
+<div class="card" style="margin-bottom:24px;border-left:3px solid var(--azul-med)">
+  <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div style="font-size:10.5px;font-weight:600;color:var(--gris-30);text-transform:uppercase;letter-spacing:.5px">Proxima sesion</div>
+      <div style="font-size:15px;font-weight:700;color:var(--gris-90);margin-top:4px">{{ stats.proxima_sesion.PACIENTE }}</div>
+      <div style="font-size:12px;color:var(--gris-50);margin-top:2px">
+        {{ stats.proxima_sesion.FECHA_HORA|string|truncate(16,true,'') }}
+        {% if stats.proxima_sesion.EQUINO %} &middot; Equino: {{ stats.proxima_sesion.EQUINO }}{% endif %}
+      </div>
+    </div>
+    <a href="/sesion/{{ stats.proxima_sesion.ID }}" class="btn btn-primary">Ver sesion</a>
+  </div>
+</div>
+{% endif %}
+{% elif session.rol == 'ENCARGADO_EQUINOS' %}
+<div class="stats-grid">
+  <div class="stat-card accent-verde">
+    <div class="label">Disponibles</div>
+    <div class="value" data-counter="{{ stats.disponible or 0 }}">0</div>
+  </div>
+  <div class="stat-card accent-ambar">
+    <div class="label">Precaucion</div>
+    <div class="value" data-counter="{{ stats.precaucion or 0 }}">0</div>
+  </div>
+  <div class="stat-card accent-rojo">
+    <div class="label">Descanso / Veterinario</div>
+    <div class="value" data-counter="{{ stats.descanso or 0 }}">0</div>
+  </div>
+</div>
+
+{% if stats.lista_sin_registro %}
+<div class="card" style="margin-bottom:24px;border-left:3px solid var(--ambar)">
+  <div class="card-body">
+    <div style="font-size:12.5px;font-weight:700;color:var(--ambar);margin-bottom:6px">
+      {{ stats.sin_registro_hoy }} equino(s) sin registro de estado hoy
+    </div>
+    <div style="font-size:12px;color:var(--gris-50)">
+      {{ stats.lista_sin_registro|join(', ') }}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+
+<div style="display:flex;flex-direction:column;gap:20px">
+
+  {% if session.rol in ['ADMINISTRADOR','COORDINADOR'] %}
+  <div class="card">
+    <div class="card-header"><h3>Sesiones por dia (rango de la semana)</h3></div>
+    <div class="card-body">
+      <canvas id="chartSesiones" height="90"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Sesiones proximas</h3>
+      <a href="/agenda" class="btn btn-sm btn-secondary">Ver agenda completa</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha / Hora</th>
+            <th>Paciente</th>
+            {% if session.rol != 'TERAPEUTA' %}<th>Terapeuta</th>{% endif %}
+            <th>Equino</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sesiones %}
+          <tr>
+            <td><strong>{{ s.FECHA_HORA|string|truncate(16,true,'') }}</strong></td>
+            <td>{{ s.PACIENTE }}</td>
+            {% if session.rol != 'TERAPEUTA' %}<td>{{ s.TERAPEUTA }}</td>{% endif %}
+            <td>{{ s.EQUINO or '-' }}</td>
+            <td>
+              {% if s.ESTADO == 'PROGRAMADA' %}
+                <span class="badge badge-ambar"><span class="status-dot dot-ambar"></span>Programada</span>
+              {% elif s.ESTADO == 'REALIZADA' %}
+                <span class="badge badge-verde"><span class="status-dot dot-verde"></span>Realizada</span>
+              {% else %}
+                <span class="badge badge-gris">{{ s.ESTADO }}</span>
+              {% endif %}
+            </td>
+            <td><a href="/sesion/{{ s.ID }}" class="btn btn-sm btn-secondary">Ver</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" style="text-align:center;color:var(--gris-30);padding:30px">Sin sesiones proximas</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Estado de equinos</h3>
+    <a href="/equinos" class="btn btn-sm btn-secondary">Gestionar</a>
+  </div>
+  <div class="card-body">
+    <div style="display:flex;flex-direction:column;gap:9px">
+      {% for eq in equinos %}
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:5px">
+        <span class="status-dot
+          {% if eq.ESTADO == 'DISPONIBLE' %}dot-verde
+          {% elif eq.ESTADO == 'PRECAUCION' %}dot-ambar
+          {% elif eq.ESTADO in ['DESCANSO','VETERINARIO'] %}dot-rojo
+          {% else %}dot-gris{% endif %}"></span>
+        <div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--gris-90)">{{ eq.NOMBRE }}</div>
+          <div style="font-size:10.5px;color:var(--gris-30)">
+            {% if eq.ESTADO == 'DISPONIBLE' %}Disponible
+            {% elif eq.ESTADO == 'PRECAUCION' %}Precaucion
+            {% elif eq.ESTADO == 'DESCANSO' %}Descanso
+            {% elif eq.ESTADO == 'VETERINARIO' %}Veterinario
+            {% else %}{{ eq.ESTADO }}{% endif %}
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <p style="color:var(--gris-30);font-size:12.5px;text-align:center;padding:20px">Sin equinos registrados</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Animacion de contadores
+document.querySelectorAll('[data-counter]').forEach(el => {
+  const target = parseInt(el.getAttribute('data-counter'), 10) || 0;
+  const duration = 700;
+  const startTime = performance.now();
+  function step(now){
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target);
+    if(progress < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+{% if session.rol in ['ADMINISTRADOR','COORDINADOR'] %}
+const ctx = document.getElementById('chartSesiones');
+if(ctx){
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ grafica_labels|tojson }},
+      datasets: [{
+        label: 'Sesiones',
+        data: {{ grafica_data|tojson }},
+        backgroundColor: '#2c5f8a',
+        borderRadius: 3,
+        maxBarThickness: 36
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: {size: 11} }, grid: {color:'#eef0f2'} },
+        x: { grid: { display: false }, ticks: {font: {size: 11}} }
+      }
+    }
+  });
+}
+{% endif %}
+</script>
+{% endblock %}

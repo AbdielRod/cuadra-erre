@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}Agenda - Cuadra Erre{% endblock %}
+{% block page_title %}Agenda{% endblock %}
+{% block page_sub %}Programacion de sesiones clinicas{% endblock %}
+{% block head %}
+<style>
+  .view-toggle{display:flex;gap:0;border:1.5px solid var(--gris-10);border-radius:5px;overflow:hidden}
+  .view-toggle button{
+    padding:8px 16px;background:#fff;border:none;font-size:12px;font-weight:600;
+    color:var(--gris-50);cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;
+  }
+  .view-toggle button.active{background:var(--azul-osc);color:#fff}
+  .view-toggle button:not(.active):hover{background:#fafbfc}
+
+  .cal-wrap{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .cal-nav{display:flex;gap:8px;align-items:center}
+  .cal-nav button{
+    padding:7px 12px;background:#fff;border:1.5px solid var(--gris-10);border-radius:5px;
+    font-size:12px;font-weight:600;color:var(--gris-70);cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .cal-nav button:hover{background:#fafbfc;border-color:var(--gris-30)}
+  .cal-range{font-size:13.5px;font-weight:700;color:var(--gris-90)}
+
+  .cal-grid{display:grid;grid-template-columns:60px repeat(7,1fr);overflow-x:auto}
+  .cal-corner{border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:#fafbfc}
+  .cal-daycol-header{
+    padding:10px 6px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    background:#fafbfc;min-width:120px;
+  }
+  .cal-daycol-header.today{background:var(--azul-bg)}
+  .cal-daycol-header .dname{font-size:10px;font-weight:600;color:var(--gris-30);text-transform:uppercase;letter-spacing:.4px}
+  .cal-daycol-header .dnum{font-size:16px;font-weight:700;color:var(--gris-90);margin-top:2px}
+  .cal-daycol-header.today .dnum{color:var(--azul-osc)}
+
+  .cal-hour-label{
+    padding:6px;text-align:right;font-size:10px;color:var(--gris-30);border-right:1px solid var(--border);
+    border-bottom:1px solid var(--border);background:#fafbfc;
+  }
+  .cal-cell{
+    border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    min-height:46px;position:relative;padding:2px;
+  }
+  .cal-cell.today-col{background:#fafcfe}
+
+  .cal-event{
+    border-radius:4px;padding:4px 7px;font-size:10.5px;cursor:pointer;
+    border-left:3px solid;line-height:1.3;margin-bottom:2px;transition:.1s;
+  }
+  .cal-event:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+  .cal-event.ev-programada{background:var(--ambar-bg);border-left-color:var(--ambar);color:#7a5414}
+  .cal-event.ev-realizada{background:var(--verde-bg);border-left-color:var(--verde);color:#1f4d39}
+  .cal-event.ev-cancelada{background:var(--rojo-bg);border-left-color:var(--rojo);color:#7a2a2a;text-decoration:line-through;opacity:.7}
+  .cal-event .ev-time{font-weight:700}
+  .cal-event .ev-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .cal-legend{display:flex;gap:16px;padding:10px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--gris-50)}
+  .cal-legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend-dot{width:8px;height:8px;border-radius:2px}
+</style>
+{% endblock %}
+{% block topbar_actions %}
+<div style="display:flex;gap:10px">
+  <div class="view-toggle">
+    <button id="btnViewList" class="active" onclick="switchView('list')">Lista</button>
+    <button id="btnViewCal" onclick="switchView('cal')">Calendario</button>
+  </div>
+  <a href="/agenda/exportar" class="btn btn-secondary">Exportar Excel</a>
+  {% if session.rol in ['ADMINISTRADOR','COORDINADOR','TERAPEUTA'] %}
+  <button class="btn btn-primary" onclick="openModal('modalNueva')">Nueva sesion</button>
+  {% endif %}
+</div>
+{% endblock %}
+{% block content %}
+
+<div id="viewList">
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-body" style="padding:14px 20px">
+      <form method="GET" action="/agenda" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:200px">
+          <label>BUSCAR</label>
+          <input type="text" name="q" value="{{ filtro_busqueda }}" placeholder="Paciente o terapeuta...">
+        </div>
+        <div class="form-group" style="min-width:160px">
+          <label>ESTADO</label>
+          <select name="estado">
+            <option value="">Todos los estados</option>
+            <option value="PROGRAMADA" {% if filtro_estado=='PROGRAMADA' %}selected{% endif %}>Programada</option>
+            <option value="REALIZADA" {% if filtro_estado=='REALIZADA' %}selected{% endif %}>Realizada</option>
+            <option value="CANCELADA" {% if filtro_estado=='CANCELADA' %}selected{% endif %}>Cancelada</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Filtrar</button>
+        {% if filtro_busqueda or filtro_estado %}
+        <a href="/agenda" class="btn btn-secondary">Limpiar</a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Listado de sesiones</h3>
+      <span style="font-size:11.5px;color:var(--gris-30)">{{ sesiones|length }} registros</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha / Hora</th>
+            <th>Paciente</th>
+            {% if session.rol != 'TERAPEUTA' %}<th>Terapeuta</th>{% endif %}
+            <th>Equino</th>
+            <th>Area</th>
+            <th>Min</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sesiones %}
+          <tr>
+            <td><strong>{{ s.FECHA_HORA|string|truncate(16,true,'') }}</strong></td>
+            <td>{{ s.PACIENTE }}</td>
+            {% if session.rol != 'TERAPEUTA' %}<td>{{ s.TERAPEUTA }}</td>{% endif %}
+            <td>{{ s.EQUINO or '-' }}</td>
+            <td>{{ s.AREA or '-' }}</td>
+            <td>{{ s.DURACION_MIN or 45 }}</td>
+            <td>
+              {% if s.ESTADO == 'PROGRAMADA' %}
+                <span class="badge badge-ambar"><span class="status-dot dot-ambar"></span>Programada</span>
+              {% elif s.ESTADO == 'REALIZADA' %}
+                <span class="badge badge-verde"><span class="status-dot dot-verde"></span>Realizada</span>
+              {% elif s.ESTADO == 'CANCELADA' %}
+                <span class="badge badge-rojo">Cancelada</span>
+              {% else %}
+                <span class="badge badge-gris">{{ s.ESTADO }}</span>
+              {% endif %}
+            </td>
+            <td style="display:flex;gap:6px">
+              <a href="/sesion/{{ s.ID }}" class="btn btn-sm btn-secondary">Ver</a>
+              {% if session.rol in ['ADMINISTRADOR','COORDINADOR'] and s.ESTADO == 'PROGRAMADA' %}
+              <form method="POST" action="/sesion/{{ s.ID }}/cancelar"
+                    onsubmit="return confirm('Confirma cancelar esta sesion?')">
+                <button class="btn btn-sm btn-danger" type="submit">Cancelar</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" style="text-align:center;color:var(--gris-30);padding:30px">Sin sesiones registradas</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="viewCal" style="display:none">
+  <div class="cal-wrap">
+    <div class="cal-header">
+      <div class="cal-nav">
+        <button onclick="navWeek(-1)">&larr; Semana anterior</button>
+        <button onclick="navToday()">Hoy</button>
+        <button onclick="navWeek(1)">Semana siguiente &rarr;</button>
+      </div>
+      <div class="cal-range" id="calRange">Cargando...</div>
+    </div>
+    <div id="calGridWrap" style="overflow-x:auto">
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="cal-legend">
+      <span><span class="legend-dot" style="background:var(--ambar)"></span>Programada</span>
+      <span><span class="legend-dot" style="background:var(--verde)"></span>Realizada</span>
+      <span><span class="legend-dot" style="background:var(--rojo)"></span>Cancelada</span>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalNueva">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Nueva sesion</h4>
+      <span class="modal-close" onclick="closeModal('modalNueva')">&times;</span>
+    </div>
+    <form method="POST" action="/agenda/nueva" id="frmSesion">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>PACIENTE *</label>
+            <select name="paciente_id" required>
+              <option value="">Seleccionar</option>
+              {% for p in pacientes %}
+              <option value="{{ p.ID }}">{{ p.NOM }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if session.rol != 'TERAPEUTA' %}
+          <div class="form-group">
+            <label>TERAPEUTA *</label>
+            <select name="terapeuta_id" required>
+              <option value="">Seleccionar</option>
+              {% for t in terapeutas %}
+              <option value="{{ t.ID }}">{{ t.NOM }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="form-group">
+            <label>EQUINO (disponibles)</label>
+            <select name="equino_id">
+              <option value="">Sin asignar</option>
+              {% for e in equinos %}
+              <option value="{{ e.ID }}">{{ e.NOMBRE }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>AREA</label>
+            <select name="area_id">
+              <option value="">Sin asignar</option>
+              {% for a in areas %}
+              <option value="{{ a.ID }}">{{ a.NOMBRE }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>FECHA Y HORA *</label>
+            <input type="datetime-local" name="fecha_hora" required>
+          </div>
+          <div class="form-group">
+            <label>DURACION (minutos)</label>
+            <input type="number" name="duracion" value="45" min="15" max="120">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>OBJETIVOS DE LA SESION</label>
+          <textarea name="objetivos" rows="3" placeholder="Ej: Mejorar equilibrio, coordinacion bilateral..."></textarea>
+        </div>
+        <div style="background:var(--azul-bg);border-left:3px solid var(--azul-med);border-radius:4px;padding:10px 14px;margin-top:14px;font-size:11.5px;color:var(--azul-osc)">
+          Se enviara automaticamente un correo de confirmacion a los familiares registrados del paciente.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalNueva')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Programar sesion</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let calInicio = null;
+let calLoaded = false;
+
+function switchView(view){
+  document.getElementById('viewList').style.display = view === 'list' ? 'block' : 'none';
+  document.getElementById('viewCal').style.display = view === 'cal' ? 'block' : 'none';
+  document.getElementById('btnViewList').classList.toggle('active', view === 'list');
+  document.getElementById('btnViewCal').classList.toggle('active', view === 'cal');
+  if(view === 'cal' && !calLoaded){
+    initCalendar();
+    calLoaded = true;
+  }
+}
+
+function getMonday(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - (day === 0 ? 6 : day - 1);
+  return new Date(date.setDate(diff));
+}
+function fmtISO(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtDisplay(d){
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return d.getDate() + ' ' + meses[d.getMonth()];
+}
+
+function initCalendar(){
+  calInicio = getMonday(new Date());
+  loadWeek();
+}
+function navWeek(delta){
+  calInicio.setDate(calInicio.getDate() + (delta*7));
+  loadWeek();
+}
+function navToday(){
+  calInicio = getMonday(new Date());
+  loadWeek();
+}
+
+function loadWeek(){
+  const isoIni = fmtISO(calInicio);
+  fetch('/api/agenda_semana?inicio=' + isoIni)
+    .then(r => r.json())
+    .then(data => renderCalendar(data));
+}
+
+function renderCalendar(data){
+  const inicio = new Date(data.inicio + 'T00:00:00');
+  const fin = new Date(data.fin + 'T00:00:00');
+  document.getElementById('calRange').textContent = fmtDisplay(inicio) + ' - ' + fmtDisplay(fin);
+
+  const dias = ['LUN','MAR','MIE','JUE','VIE','SAB','DOM'];
+  const hoy = fmtISO(new Date());
+
+  let html = '<div class="cal-corner"></div>';
+  const diasArr = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(inicio);
+    d.setDate(inicio.getDate()+i);
+    diasArr.push(d);
+    const isToday = fmtISO(d) === hoy;
+    html += `<div class="cal-daycol-header ${isToday?'today':''}">
+               <div class="dname">${dias[i]}</div>
+               <div class="dnum">${d.getDate()}</div>
+             </div>`;
+  }
+
+  const horas = [];
+  for(let h=7; h<=19; h++) horas.push(h);
+
+  const porDia = {};
+  diasArr.forEach(d => porDia[fmtISO(d)] = []);
+  (data.sesiones || []).forEach(s => {
+    const fechaDia = s.FECHA_HORA.substring(0,10);
+    if(porDia[fechaDia]) porDia[fechaDia].push(s);
+  });
+
+  horas.forEach(h => {
+    html += `<div class="cal-hour-label">${h}:00</div>`;
+    diasArr.forEach(d => {
+      const isToday = fmtISO(d) === hoy;
+      const iso = fmtISO(d);
+      const sesionesHora = (porDia[iso]||[]).filter(s => {
+        const hs = parseInt(s.FECHA_HORA.substring(11,13));
+        return hs === h;
+      });
+      html += `<div class="cal-cell ${isToday?'today-col':''}">`;
+      sesionesHora.forEach(s => {
+        const hora = s.FECHA_HORA.substring(11,16);
+        const estCls = s.ESTADO === 'PROGRAMADA' ? 'ev-programada' : (s.ESTADO === 'REALIZADA' ? 'ev-realizada' : 'ev-cancelada');
+        html += `<div class="cal-event ${estCls}" onclick="location.href='/sesion/${s.ID}'">
+                   <span class="ev-time">${hora}</span>
+                   <span class="ev-name">${s.PACIENTE}</span>
+                 </div>`;
+      });
+      html += `</div>`;
+    });
+  });
+
+  document.getElementById('calGrid').innerHTML = html;
+}
+</script>
+{% endblock %}

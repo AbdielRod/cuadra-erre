@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Reporte Semanal - Cuadra Erre{% endblock %}
+{% block page_title %}Reporte Semanal{% endblock %}
+{% block page_sub %}Resumen de actividad del equipo{% endblock %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start">
+
+<div class="card">
+  <div class="card-header"><h3>Seleccionar periodo</h3></div>
+  <div class="card-body">
+    <form method="GET" action="/reporte/pdf" id="frmReporte">
+      <div class="form-group" style="margin-bottom:14px">
+        <label>FECHA INICIO</label>
+        <input type="date" name="desde" id="inp_desde" value="{{ inicio }}">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>FECHA FIN</label>
+        <input type="date" name="hasta" id="inp_hasta" value="{{ fin }}">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">
+        Descargar PDF
+      </button>
+    </form>
+    <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:16px">
+      <div style="font-size:10.5px;font-weight:600;color:var(--gris-30);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Atajos rapidos</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-secondary btn-sm" style="width:100%;justify-content:center" onclick="setSemana()">Esta semana</button>
+        <button class="btn btn-secondary btn-sm" style="width:100%;justify-content:center" onclick="setMes()">Este mes</button>
+        <button class="btn btn-secondary btn-sm" style="width:100%;justify-content:center" onclick="setUltimos30()">Ultimos 30 dias</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Contenido del reporte</h3></div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="info-row" style="border:1px solid var(--border);border-radius:5px;padding:12px">
+        <span class="info-label">Resumen de sesiones</span>
+        <span style="font-size:12px;color:var(--gris-50);margin-top:4px">Total, realizadas, programadas y canceladas</span>
+      </div>
+      <div class="info-row" style="border:1px solid var(--border);border-radius:5px;padding:12px">
+        <span class="info-label">Detalle por sesion</span>
+        <span style="font-size:12px;color:var(--gris-50);margin-top:4px">Fecha, paciente, terapeuta, equino y estado</span>
+      </div>
+      <div class="info-row" style="border:1px solid var(--border);border-radius:5px;padding:12px">
+        <span class="info-label">Carga por terapeuta</span>
+        <span style="font-size:12px;color:var(--gris-50);margin-top:4px">Numero de sesiones realizadas por terapeuta</span>
+      </div>
+      <div class="info-row" style="border:1px solid var(--border);border-radius:5px;padding:12px">
+        <span class="info-label">Formato PDF profesional</span>
+        <span style="font-size:12px;color:var(--gris-50);margin-top:4px">Listo para imprimir o compartir con el equipo</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function fmt(d){return d.toISOString().split('T')[0];}
+function setSemana(){
+  const hoy=new Date();const dia=hoy.getDay();
+  const lunes=new Date(hoy);lunes.setDate(hoy.getDate()-(dia===0?6:dia-1));
+  const domingo=new Date(lunes);domingo.setDate(lunes.getDate()+6);
+  document.getElementById('inp_desde').value=fmt(lunes);
+  document.getElementById('inp_hasta').value=fmt(domingo);
+}
+function setMes(){
+  const hoy=new Date();
+  const ini=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const fin=new Date(hoy.getFullYear(),hoy.getMonth()+1,0);
+  document.getElementById('inp_desde').value=fmt(ini);
+  document.getElementById('inp_hasta').value=fmt(fin);
+}
+function setUltimos30(){
+  const fin=new Date();const ini=new Date();ini.setDate(fin.getDate()-30);
+  document.getElementById('inp_desde').value=fmt(ini);
+  document.getElementById('inp_hasta').value=fmt(fin);
+}
+</script>
+{% endblock %}

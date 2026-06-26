@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Configuracion - Cuadra Erre{% endblock %}
+{% block page_title %}Configuracion del Sistema{% endblock %}
+{% block page_sub %}Datos generales, contacto y recordatorios automaticos{% endblock %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
+
+<div class="card">
+  <div class="card-header"><h3>Datos del centro</h3></div>
+  <div class="card-body">
+    <form method="POST" action="/configuracion">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>NOMBRE DEL CENTRO *</label>
+          <input type="text" name="nombre_centro" value="{{ cfg.NOMBRE_CENTRO or 'Cuadra Erre' }}" required>
+        </div>
+        <div class="form-group">
+          <label>TELEFONO DE CONTACTO</label>
+          <input type="text" name="telefono" value="{{ cfg.TELEFONO or '' }}" placeholder="Ej: 624-000-0000">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>DIRECCION</label>
+          <input type="text" name="direccion" value="{{ cfg.DIRECCION or '' }}" placeholder="Ej: Los Cabos, Baja California Sur">
+        </div>
+        <div class="form-group">
+          <label>EMAIL DE CONTACTO</label>
+          <input type="text" name="email_contacto" value="{{ cfg.EMAIL_CONTACTO or '' }}">
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+        <h4 style="font-size:13px;font-weight:700;color:var(--gris-90);margin-bottom:14px">Recordatorios automaticos</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ACTIVAR RECORDATORIOS POR CORREO</label>
+            <select name="recordatorio_24h">
+              <option value="1" {% if cfg.RECORDATORIO_24H == 1 %}selected{% endif %}>Activado</option>
+              <option value="0" {% if cfg.RECORDATORIO_24H == 0 %}selected{% endif %}>Desactivado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>HORAS DE ANTICIPACION</label>
+            <input type="number" name="horas_anticipacion" value="{{ cfg.HORAS_ANTICIPACION or 24 }}" min="1" max="72">
+          </div>
+        </div>
+        <div style="background:var(--azul-bg);border-left:3px solid var(--azul-med);border-radius:4px;padding:11px 14px;margin-top:14px;font-size:11.5px;color:var(--azul-osc)">
+          El sistema revisa automaticamente cada 15 minutos las sesiones proximas y envia un correo
+          de recordatorio a los familiares con email registrado, dentro de la ventana de anticipacion configurada.
+        </div>
+      </div>
+
+      <div style="margin-top:24px">
+        <button type="submit" class="btn btn-primary">Guardar configuracion</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Estado del sistema</h3></div>
+  <div class="card-body">
+    <div class="info-row">
+      <span class="info-label">Version del sistema</span>
+      <span class="info-value">SGCE v2.0</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Base de datos</span>
+      <span class="info-value">Firebird 3.0</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Servicio de correo</span>
+      <span class="info-value">Gmail SMTP</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Revision de recordatorios</span>
+      <span class="info-value">Cada 15 minutos</span>
+    </div>
+  </div>
+</div>
+
+</div>
+{% endblock %}

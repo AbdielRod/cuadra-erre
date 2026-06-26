@@ -1,0 +1,8 @@
+Flask>=3.0
+Werkzeug>=3.0
+psycopg2-binary>=2.9
+reportlab>=4.0
+schedule
+openpyxl
+gunicorn
+python-dotenv
