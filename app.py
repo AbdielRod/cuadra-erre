@@ -230,13 +230,15 @@ def init_db():
             (nextval('seq_pacientes'),'Sofia','Garcia','2015-03-12','Trastorno del Espectro Autista'),
             (nextval('seq_pacientes'),'Miguel','Torres','2012-07-08','TDAH'),
             (nextval('seq_pacientes'),'Lucas','Perez','2014-05-30','Sindrome de Down');
-            INSERT INTO usuarios (id, username, password_hash, nombre, apellido, email, rol_id)
-            VALUES (nextval('seq_usuarios'),'admin',
-            'scrypt:32768:8:1$pFuZ1dhdz5i7UpGP$77541f5cffb6569ffdddf616ba6cd6971492422deb796342923af37e2a8a4fd95a41409c9baaf50abb83d74b03652f57f167611e9b69e772c3153112a2110d48',
-            'Administrador','Sistema','admin@cuadraerre.mx',1);
             INSERT INTO configuracion (id, nombre_centro, telefono, direccion, email_contacto, color_primario, recordatorio_24h, horas_anticipacion)
             VALUES (nextval('seq_configuracion'),'Cuadra Erre','624-000-0000','Los Cabos, Baja California Sur','cuadraerreoficial@gmail.com','#1e3a5f',1,24);
         """)
+        admin_hash = generate_password_hash("#Adm123.")
+        cur.execute(
+            "INSERT INTO usuarios (id, username, password_hash, nombre, apellido, email, rol_id) "
+            "VALUES (nextval('seq_usuarios'),'admin',%s,'Administrador','Sistema','admin@cuadraerre.mx',1)",
+            (admin_hash,)
+        )
     conn.commit(); conn.close()
 
 try:
